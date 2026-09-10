@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SIGEDUCA - Emissão de Termos
 // @namespace    http://tampermonkey.net/
-// @version      1.2.2
+// @version      1.2.3
 // @description  Emissão de termos escolares em HTML/A4 a partir dos dados do cadastro do aluno.
 // @match        http://sigeduca.seduc.mt.gov.br/ged/*
 // @match        https://sigeduca.seduc.mt.gov.br/ged/*
@@ -48,7 +48,7 @@
    */
 
   const CONFIG = {
-    scriptVersion: '1.2.2',
+    scriptVersion: '1.2.3',
     versionSeenStorageKey: 'sigeduca_termos_versao_vista',
 
     cookieName: 'sigeduca_termos_config_v1',
@@ -2168,9 +2168,21 @@
             const termId =
               btn.dataset.term;
 
+            /*
+             * Busca o documento do aluno na hora do clique, em vez
+             * de usar a referência capturada quando o painel foi
+             * criado: se o usuário fechou a ficha e pesquisou outro
+             * aluno (o iframe navegou para uma página nova), aquela
+             * referência antiga continua "viva" na memória com os
+             * dados do aluno anterior, mesmo sem estar mais na tela.
+             */
+            const currentStudentDoc =
+              findStudentDocument() ||
+              studentDoc;
+
             try {
               await emitTerm(
-                studentDoc,
+                currentStudentDoc,
                 hostDoc,
                 termId
               );
