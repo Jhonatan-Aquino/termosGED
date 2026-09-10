@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SIGEDUCA - Emissão de Termos
 // @namespace    http://tampermonkey.net/
-// @version      1.1.4
+// @version      1.2.0
 // @description  Emissão de termos escolares em HTML/A4 a partir dos dados do cadastro do aluno.
 // @match        http://sigeduca.seduc.mt.gov.br/ged/*
 // @match        https://sigeduca.seduc.mt.gov.br/ged/*
@@ -47,7 +47,7 @@
    */
 
   const CONFIG = {
-    scriptVersion: '1.1.4',
+    scriptVersion: '1.2.0',
     versionSeenStorageKey: 'sigeduca_termos_versao_vista',
 
     cookieName: 'sigeduca_termos_config_v1',
@@ -545,7 +545,7 @@
     return null;
   }
 
-  function hostDocumentForHiddenFrame(
+  function resolveHostDocument(
     fromDoc
   ) {
     try {
@@ -577,7 +577,7 @@
     return new Promise(
       (resolve, reject) => {
         const hostDoc =
-          hostDocumentForHiddenFrame(
+          resolveHostDocument(
             fromDoc
           );
 
@@ -1111,12 +1111,79 @@
         background:rgba(0,0,0,.35);
       }
 
+      #${CONFIG.panelId} .sigeduca-term-header-row{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:8px;
+        margin:0 0 10px 2px;
+      }
+
       #${CONFIG.panelId} .sigeduca-term-title{
         font-weight:600;
         font-size:14px;
         letter-spacing:-.2px;
-        margin:0 0 10px 2px;
         color:var(--sigeduca-navy);
+      }
+
+      #${CONFIG.panelId} .sigeduca-term-close{
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        flex:none;
+        width:20px;
+        height:20px;
+        padding:0;
+        margin:0 2px 0 0;
+        border:none;
+        border-radius:50%;
+        background:transparent;
+        color:var(--sigeduca-muted);
+        cursor:pointer;
+        transition:background .15s ease, color .15s ease;
+      }
+
+      #${CONFIG.panelId} .sigeduca-term-close svg{
+        width:10px;
+        height:10px;
+        fill:none;
+        stroke:currentColor;
+        stroke-width:2;
+        stroke-linecap:round;
+      }
+
+      #${CONFIG.panelId} .sigeduca-term-close:hover{
+        background:rgba(0,0,0,.08);
+        color:var(--sigeduca-danger);
+      }
+
+      #${CONFIG.panelId}.sigeduca-term-collapsed{
+        width:auto;
+        padding:10px 16px;
+        border-radius:14px 0 0 14px;
+        cursor:pointer;
+        box-shadow:0 4px 18px -2px rgba(0,0,0,.2);
+        transition:padding-right .15s ease, background .15s ease;
+      }
+
+      #${CONFIG.panelId}.sigeduca-term-collapsed:hover{
+        background:rgba(255,255,255,.92);
+        padding-right:22px;
+      }
+
+      #${CONFIG.panelId}.sigeduca-term-collapsed .sigeduca-term-handle,
+      #${CONFIG.panelId}.sigeduca-term-collapsed .sigeduca-term-close,
+      #${CONFIG.panelId}.sigeduca-term-collapsed button.sigeduca-term-btn,
+      #${CONFIG.panelId}.sigeduca-term-collapsed button.sigeduca-term-settings{
+        display:none;
+      }
+
+      #${CONFIG.panelId}.sigeduca-term-collapsed .sigeduca-term-header-row{
+        margin:0;
+      }
+
+      #${CONFIG.panelId}.sigeduca-term-collapsed .sigeduca-term-title{
+        white-space:nowrap;
       }
 
       #${CONFIG.panelId} button.sigeduca-term-btn{
@@ -1353,14 +1420,77 @@
     };
   }
 
-  function positionPanel(targetDoc) {
+  function getRectRelativeToHost(
+    element,
+    hostDoc
+  ) {
+    const ownRect =
+      element.getBoundingClientRect();
+
+    let rect = {
+      left: ownRect.left,
+      top: ownRect.top,
+      right: ownRect.right,
+      bottom: ownRect.bottom
+    };
+
+    let win =
+      element.ownerDocument
+        .defaultView;
+
+    while (
+      win &&
+      win.document !== hostDoc
+    ) {
+      let frameEl = null;
+
+      try {
+        frameEl = win.frameElement;
+      } catch {
+        frameEl = null;
+      }
+
+      if (!frameEl) {
+        break;
+      }
+
+      const frameRect =
+        frameEl.getBoundingClientRect();
+
+      rect = {
+        left: rect.left + frameRect.left,
+        top: rect.top + frameRect.top,
+        right: rect.right + frameRect.left,
+        bottom: rect.bottom + frameRect.top
+      };
+
+      win =
+        frameEl.ownerDocument
+          .defaultView;
+    }
+
+    return rect;
+  }
+
+  function positionPanel(
+    studentDoc,
+    hostDoc
+  ) {
     const panel =
       $(
-        targetDoc,
+        hostDoc,
         `#${CONFIG.panelId}`
       );
 
     if (!panel) {
+      return;
+    }
+
+    if (
+      panel.classList.contains(
+        'sigeduca-term-collapsed'
+      )
+    ) {
       return;
     }
 
@@ -1370,7 +1500,7 @@
     ) {
       const clamped =
         clampPanelPosition(
-          targetDoc,
+          hostDoc,
           panel,
           panelDragPosition.left,
           panelDragPosition.top
@@ -1387,7 +1517,7 @@
 
     const photo =
       $(
-        targetDoc,
+        studentDoc,
         `#${CONFIG.anchorId}`
       );
 
@@ -1396,7 +1526,10 @@
     }
 
     const rect =
-      photo.getBoundingClientRect();
+      getRectRelativeToHost(
+        photo,
+        hostDoc
+      );
 
     const panelWidth =
       panel.offsetWidth || 228;
@@ -1417,7 +1550,7 @@
     let top = rect.top;
 
     const maxTop =
-      targetDoc.defaultView.innerHeight -
+      hostDoc.defaultView.innerHeight -
       panel.offsetHeight -
       6;
 
@@ -1598,6 +1731,56 @@
         event.preventDefault();
       }
     );
+  }
+
+  function collapsePanel(panel) {
+    if (!panelDragPosition) {
+      const rect =
+        panel.getBoundingClientRect();
+
+      panelDragPosition = {
+        left: rect.left,
+        top: rect.top
+      };
+    }
+
+    panelDragged = true;
+
+    savePanelPosition(
+      panelDragPosition
+    );
+
+    panel.classList.add(
+      'sigeduca-term-collapsed'
+    );
+
+    panel.style.left = '';
+    panel.style.right = '0px';
+  }
+
+  function expandPanel(
+    hostDoc,
+    panel
+  ) {
+    panel.classList.remove(
+      'sigeduca-term-collapsed'
+    );
+
+    panel.style.right = '';
+
+    const clamped =
+      clampPanelPosition(
+        hostDoc,
+        panel,
+        panelDragPosition.left,
+        panelDragPosition.top
+      );
+
+    panel.style.left =
+      `${Math.round(clamped.left)}px`;
+
+    panel.style.top =
+      `${Math.round(clamped.top)}px`;
   }
 
   function removePanel(targetDoc) {
@@ -1789,12 +1972,15 @@
   // PAINEL
   // ============================================================
 
-  function createPanel(targetDoc) {
-    injectBaseCSS(targetDoc);
-    removePanel(targetDoc);
+  function createPanel(
+    studentDoc,
+    hostDoc
+  ) {
+    injectBaseCSS(hostDoc);
+    removePanel(hostDoc);
 
     const panel =
-      targetDoc.createElement(
+      hostDoc.createElement(
         'div'
       );
 
@@ -1808,8 +1994,20 @@
         aria-hidden="true"
       ></div>
 
-      <div class="sigeduca-term-title">
-        Emitir Documentos
+      <div class="sigeduca-term-header-row">
+        <div class="sigeduca-term-title">
+          Emitir Documentos
+        </div>
+
+        <button
+          class="sigeduca-term-close"
+          title="Fechar"
+          aria-label="Fechar"
+        >
+          <svg viewBox="0 0 12 12" aria-hidden="true">
+            <path d="M1 1l10 10M11 1L1 11"/>
+          </svg>
+        </button>
       </div>
 
       <button
@@ -1857,16 +2055,17 @@
       </button>
     `;
 
-    targetDoc.body.appendChild(
+    hostDoc.body.appendChild(
       panel
     );
 
     positionPanel(
-      targetDoc
+      studentDoc,
+      hostDoc
     );
 
     makePanelDraggable(
-      targetDoc,
+      hostDoc,
       panel
     );
 
@@ -1883,7 +2082,8 @@
 
             try {
               await emitTerm(
-                targetDoc,
+                studentDoc,
+                hostDoc,
                 termId
               );
             } catch (error) {
@@ -1910,7 +2110,7 @@
         async () => {
           try {
             await showSchoolConfigModal(
-              targetDoc,
+              hostDoc,
               true
             );
           } catch (error) {
@@ -1922,8 +2122,36 @@
         }
       );
 
+    panel
+      .querySelector(
+        '.sigeduca-term-close'
+      )
+      .addEventListener(
+        'click',
+        (event) => {
+          event.stopPropagation();
+          collapsePanel(panel);
+        }
+      );
+
+    panel.addEventListener(
+      'click',
+      () => {
+        if (
+          panel.classList.contains(
+            'sigeduca-term-collapsed'
+          )
+        ) {
+          expandPanel(
+            hostDoc,
+            panel
+          );
+        }
+      }
+    );
+
     triggerVersionGlow(
-      targetDoc,
+      hostDoc,
       panel
     );
 
@@ -2741,7 +2969,8 @@
   // ============================================================
 
   async function emitTerm(
-    targetDoc,
+    studentDoc,
+    hostDoc,
     termId
   ) {
     let headerDoc = null;
@@ -2749,7 +2978,7 @@
     try {
       headerDoc =
         await resolveHeaderDocument(
-          targetDoc
+          studentDoc
         );
     } catch (error) {
       console.warn(
@@ -2760,7 +2989,7 @@
 
     const data =
       getStudentData(
-        targetDoc,
+        studentDoc,
         headerDoc
       );
 
@@ -2800,7 +3029,7 @@
     ) {
       schoolCfg =
         await showSchoolConfigModal(
-          targetDoc,
+          hostDoc,
           false
         );
 
@@ -2898,7 +3127,7 @@
 
         const rg =
           await showResponsibleRGModal(
-            targetDoc,
+            hostDoc,
             data.responsavel
           );
 
@@ -2921,7 +3150,7 @@
 
         const rgAuth =
           await showResponsibleRGModal(
-            targetDoc,
+            hostDoc,
             data.responsavel
           );
 
@@ -2974,6 +3203,7 @@
 
   let attempts = 0;
   let installedDoc = null;
+  let installedHostDoc = null;
 
   function install() {
     const studentDoc =
@@ -2995,36 +3225,60 @@
       return;
     }
 
+    /*
+     * O painel é montado no documento "hospedeiro" (o topo
+     * acessível da árvore de frames), não no documento do
+     * cadastro em si — assim ele não fica preso dentro do
+     * iframe da ficha, podendo ser arrastado para qualquer
+     * canto da janela.
+     */
+    const hostDoc =
+      resolveHostDocument(
+        studentDoc
+      );
+
     if (
       $(
-        studentDoc,
+        hostDoc,
         `#${CONFIG.panelId}`
       )
     ) {
       installedDoc =
         studentDoc;
 
+      installedHostDoc =
+        hostDoc;
+
       positionPanel(
-        studentDoc
+        studentDoc,
+        hostDoc
       );
 
       return;
     }
 
     createPanel(
-      studentDoc
+      studentDoc,
+      hostDoc
     );
 
     installedDoc =
       studentDoc;
 
+    installedHostDoc =
+      hostDoc;
+
     const win =
-      studentDoc.defaultView;
+      hostDoc.defaultView;
 
     const reposition = () => {
-      if (installedDoc) {
+      if (
+        installedDoc &&
+        installedHostDoc
+      ) {
         positionPanel(
-          installedDoc
+          installedDoc,
+          installedHostDoc
         );
       }
     };
@@ -3051,7 +3305,7 @@
 
           if (
             !$(
-              studentDoc,
+              hostDoc,
               `#${CONFIG.panelId}`
             ) &&
             $(
@@ -3060,18 +3314,20 @@
             )
           ) {
             createPanel(
-              studentDoc
+              studentDoc,
+              hostDoc
             );
           }
 
           positionPanel(
-            studentDoc
+            studentDoc,
+            hostDoc
           );
         }
       );
 
     observer.observe(
-      studentDoc.body,
+      hostDoc.body,
       {
         childList: true,
         subtree: true
@@ -3094,19 +3350,26 @@
         return;
       }
 
+      const hostDoc =
+        resolveHostDocument(
+          studentDoc
+        );
+
       if (
         !$(
-          studentDoc,
+          hostDoc,
           `#${CONFIG.panelId}`
         )
       ) {
         createPanel(
-          studentDoc
+          studentDoc,
+          hostDoc
         );
       }
 
       positionPanel(
-        studentDoc
+        studentDoc,
+        hostDoc
       );
     },
     2500
