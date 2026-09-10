@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SIGEDUCA - Emissão de Termos
 // @namespace    http://tampermonkey.net/
-// @version      1.4.0
+// @version      1.4.1
 // @description  Emissão de termos escolares em HTML/A4 a partir dos dados do cadastro do aluno.
 // @match        http://sigeduca.seduc.mt.gov.br/ged/*
 // @match        https://sigeduca.seduc.mt.gov.br/ged/*
@@ -48,7 +48,7 @@
    */
 
   const CONFIG = {
-    scriptVersion: '1.4.0',
+    scriptVersion: '1.4.1',
     versionSeenStorageKey: 'sigeduca_termos_versao_vista',
 
     cookieName: 'sigeduca_termos_config_v1',
@@ -56,6 +56,20 @@
     cookieMaxAge: 60 * 60 * 24 * 365,
 
     schoolInfoUrl: '/ged/hwgedteladocumento.aspx?0,36',
+
+    /*
+     * A tela do cabeçalho só devolve os dados da escola já
+     * preenchidos (em vez dos marcadores "#lotlogradouro#" etc. do
+     * modelo) se antes disso a sessão do GED for "aquecida" com o
+     * fluxo de Validação de Histórico para um código de aluno
+     * (GEDALUCOD) válido. Ainda não sabemos ler esse código
+     * diretamente do aluno que está sendo emitido no momento — por
+     * ora fica fixo em um aluno de teste só para validar se o
+     * caminho funciona.
+     */
+    validacaoHistoricoUrl:
+      '/ged/HWGedValidacaoHistorico.aspx?3,{ALUNO},F,0,HWMGedHistorico',
+    testAlunoCode: '971680',
 
     panelId: 'sigeducaTermosPanel',
     modalId: 'sigeducaTermosModal',
@@ -427,7 +441,38 @@
     return '';
   }
 
+  function looksLikeUnresolvedPlaceholder(
+    value
+  ) {
+    return (
+      /#/.test(value)
+    );
+  }
+
   async function fetchSchoolInfoFromGed() {
+    /*
+     * Sem esse "aquecimento" prévio, a tela do cabeçalho devolve o
+     * modelo com os marcadores não substituídos (ex.:
+     * "#lotlogradouro#") em vez dos dados reais — o servidor
+     * precisa antes saber, via esse fluxo de Validação de
+     * Histórico, de qual aluno/lotação buscar as informações.
+     */
+    const validacaoUrl =
+      new URL(
+        CONFIG.validacaoHistoricoUrl.replace(
+          '{ALUNO}',
+          CONFIG.testAlunoCode
+        ),
+        window.location.origin
+      ).href;
+
+    await fetch(
+      validacaoUrl,
+      {
+        credentials: 'same-origin'
+      }
+    );
+
     const url = new URL(
       CONFIG.schoolInfoUrl,
       window.location.origin
@@ -491,7 +536,16 @@
         'Fone:'
       );
 
-    if (!endereco || !foneRaw) {
+    if (
+      !endereco ||
+      !foneRaw ||
+      looksLikeUnresolvedPlaceholder(
+        endereco
+      ) ||
+      looksLikeUnresolvedPlaceholder(
+        foneRaw
+      )
+    ) {
       throw new Error(
         'Os dados da escola não foram encontrados na resposta do servidor.'
       );
