@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SIGEDUCA - Emissão de Termos
 // @namespace    http://tampermonkey.net/
-// @version      1.1.3
+// @version      1.1.4
 // @description  Emissão de termos escolares em HTML/A4 a partir dos dados do cadastro do aluno.
 // @match        http://sigeduca.seduc.mt.gov.br/ged/*
 // @match        https://sigeduca.seduc.mt.gov.br/ged/*
@@ -47,7 +47,7 @@
    */
 
   const CONFIG = {
-    scriptVersion: '1.1.3',
+    scriptVersion: '1.1.4',
     versionSeenStorageKey: 'sigeduca_termos_versao_vista',
 
     cookieName: 'sigeduca_termos_config_v1',
@@ -1519,7 +1519,7 @@
           panelDragPosition = clamped;
         };
 
-        const onUp = (upEvent) => {
+        const endDrag = (endEvent) => {
           handle.classList.remove(
             'sigeduca-term-handle-dragging'
           );
@@ -1533,6 +1533,21 @@
             onMove
           );
 
+          handle.removeEventListener(
+            'pointerup',
+            endDrag
+          );
+
+          handle.removeEventListener(
+            'pointercancel',
+            endDrag
+          );
+
+          handle.removeEventListener(
+            'lostpointercapture',
+            endDrag
+          );
+
           if (panelDragPosition) {
             savePanelPosition(
               panelDragPosition
@@ -1541,10 +1556,10 @@
 
           try {
             handle.releasePointerCapture(
-              upEvent.pointerId
+              endEvent.pointerId
             );
           } catch {
-            // captura indisponível
+            // captura já perdida/indisponível
           }
         };
 
@@ -1553,9 +1568,30 @@
           onMove
         );
 
+        /*
+         * Em páginas com iframes/postbacks (como o SIGEDUCA), a
+         * captura do ponteiro pode ser perdida sem que um
+         * "pointerup" limpo chegue a disparar. Sem essa rede de
+         * segurança, o listener de "pointermove" ficava vazando e
+         * reagia a qualquer passada do mouse sobre o handle usando
+         * as coordenadas do arraste anterior — causando o "piscar"
+         * ao pairar sobre a posição antiga.
+         */
         handle.addEventListener(
           'pointerup',
-          onUp,
+          endDrag,
+          { once: true }
+        );
+
+        handle.addEventListener(
+          'pointercancel',
+          endDrag,
+          { once: true }
+        );
+
+        handle.addEventListener(
+          'lostpointercapture',
+          endDrag,
           { once: true }
         );
 
