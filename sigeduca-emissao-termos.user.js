@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SIGEDUCA - Emissão de Termos
 // @namespace    http://tampermonkey.net/
-// @version      1.0.7
+// @version      1.0.8
 // @description  Emissão de termos escolares em HTML/A4 a partir dos dados do cadastro do aluno.
 // @match        http://sigeduca.seduc.mt.gov.br/ged/*
 // @match        https://sigeduca.seduc.mt.gov.br/ged/*
@@ -47,9 +47,6 @@
    */
 
   const CONFIG = {
-    scriptName: 'SIGEDUCA - Emissão de Termos',
-    scriptVersion: '1.0.7',
-
     cookieName: 'sigeduca_termos_config_v1',
     cookieMaxAge: 60 * 60 * 24 * 365,
 
@@ -1122,40 +1119,30 @@
       }
 
       #${CONFIG.panelId} button.sigeduca-term-settings{
-        display:block;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        gap:6px;
         width:100%;
         margin-top:8px;
-        padding:7px 2px 0;
+        padding:8px 2px 0;
         border:none;
         border-top:1px solid rgba(0,0,0,.08);
         background:transparent;
         color:var(--sigeduca-muted);
-        text-align:left;
+        text-align:center;
         font-size:11px;
         cursor:pointer;
       }
 
+      #${CONFIG.panelId} button.sigeduca-term-settings svg{
+        width:12px;
+        height:12px;
+        flex:none;
+        fill:currentColor;
+      }
+
       #${CONFIG.panelId} button.sigeduca-term-settings:hover{
-        color:var(--sigeduca-blue);
-      }
-
-      #${CONFIG.panelId} .sigeduca-term-footer{
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-        margin-top:10px;
-        padding-top:8px;
-        border-top:1px solid rgba(0,0,0,.06);
-        font-size:8pt;
-        color:#8a8a8e;
-      }
-
-      #${CONFIG.panelId} .sigeduca-term-footer a{
-        color:#8a8a8e;
-        text-decoration:none;
-      }
-
-      #${CONFIG.panelId} .sigeduca-term-footer a:hover{
         color:var(--sigeduca-blue);
       }
 
@@ -1362,7 +1349,7 @@
 
     panel.innerHTML = `
       <div class="sigeduca-term-title">
-        Documentos
+        Emitir Documentos
       </div>
 
       <button
@@ -1396,17 +1383,11 @@
       <button
         class="sigeduca-term-settings"
       >
+        <svg viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M17.14 10.94c.04-.31.06-.62.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.1 7.1 0 0 0-1.62-.94l-.36-2.54A.5.5 0 0 0 12 0H8a.5.5 0 0 0-.5.46l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96a.5.5 0 0 0-.6.22L.61 6.52a.5.5 0 0 0 .12.64l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L.73 12.2a.5.5 0 0 0-.12.64l1.92 3.32c.13.22.39.31.6.22l2.39-.96c.49.38 1.03.7 1.62.94l.36 2.54c.05.26.28.46.5.46h4c.25 0 .46-.2.5-.46l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.24.1.5 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58zM10 13.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/>
+        </svg>
         Configurar dados da escola
       </button>
-
-      <div class="sigeduca-term-footer">
-        <a
-          href="https://github.com/Jhonatan-Aquino/"
-          target="_blank"
-          rel="noopener"
-        >&lt; Jhonatan Aquino /&gt;</a>
-        <span>v${CONFIG.scriptVersion}</span>
-      </div>
     `;
 
     targetDoc.body.appendChild(
