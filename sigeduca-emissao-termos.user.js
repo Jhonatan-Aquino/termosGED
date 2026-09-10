@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SIGEDUCA - Emissão de Termos
 // @namespace    http://tampermonkey.net/
-// @version      1.0.5
+// @version      1.0.6
 // @description  Emissão de termos escolares em HTML/A4 a partir dos dados do cadastro do aluno.
 // @match        http://sigeduca.seduc.mt.gov.br/ged/*
 // @match        https://sigeduca.seduc.mt.gov.br/ged/*
@@ -232,6 +232,25 @@
         digits.slice(0, 5) +
         '-' +
         digits.slice(5)
+      );
+    }
+
+    return normalizeSpace(value);
+  }
+
+  function formatCpf(value) {
+    const digits = normalizeSpace(value)
+      .replace(/\D/g, '');
+
+    if (digits.length === 11) {
+      return (
+        digits.slice(0, 3) +
+        '.' +
+        digits.slice(3, 6) +
+        '.' +
+        digits.slice(6, 9) +
+        '-' +
+        digits.slice(9)
       );
     }
 
@@ -828,9 +847,11 @@
       );
 
     const cpfResponsavel =
-      textOf(
-        doc,
-        '#CTLGERPESRESPCPF'
+      formatCpf(
+        textOf(
+          doc,
+          '#CTLGERPESRESPCPF'
+        )
       );
 
     // ----------------------------------------------------------
@@ -1630,29 +1651,22 @@
           createModalShell(
             targetDoc,
             'RG do responsável',
-            `O RG do responsável "${responsavelAtual || 'não informado'}" não está disponível no cadastro. Informe o RG para emitir este termo.`
+            `O RG do responsável "${responsavelAtual || 'não informado'}" não está disponível no cadastro. Informe o RG para emitir este termo, ou deixe em branco para usar o CPF do responsável no lugar do RG.`
           );
 
         card.insertAdjacentHTML(
           'beforeend',
           `
           <label for="sigeducaRG">
-            RG do responsável
+            RG do responsável (opcional)
           </label>
 
           <input
             id="sigeducaRG"
             type="text"
             autocomplete="off"
-            placeholder="Ex.: 12.345.678-9"
+            placeholder="Ex.: 12.345.678-9 (deixe em branco para usar o CPF)"
           >
-
-          <div
-            class="sigeduca-modal-error"
-            id="sigeducaModalError"
-          >
-            Informe o RG do responsável.
-          </div>
 
           <div
             class="sigeduca-modal-actions"
@@ -1684,17 +1698,6 @@
                 )
                 ?.value
             );
-
-          if (!rg) {
-            card
-              .querySelector(
-                '#sigeducaModalError'
-              )
-              .style.display =
-              'block';
-
-            return;
-          }
 
           closeModal(
             targetDoc
@@ -1995,7 +1998,9 @@
       replaceAllSafe(
         html,
         '<<RG_RESPONSAVEL>>',
-        responsibleRG
+        responsibleRG ||
+        data.cpfResponsavel ||
+        '[RG DO RESPONSÁVEL]'
       );
 
     html =
