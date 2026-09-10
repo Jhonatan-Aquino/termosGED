@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SIGEDUCA - Emissão de Termos
 // @namespace    http://tampermonkey.net/
-// @version      1.5.2
+// @version      1.6.0
 // @description  Emissão de termos escolares em HTML/A4 a partir dos dados do cadastro do aluno.
 // @match        http://sigeduca.seduc.mt.gov.br/ged/*
 // @match        https://sigeduca.seduc.mt.gov.br/ged/*
@@ -48,7 +48,7 @@
    */
 
   const CONFIG = {
-    scriptVersion: '1.5.2',
+    scriptVersion: '1.6.0',
     versionSeenStorageKey: 'sigeduca_termos_versao_vista',
 
     cookieName: 'sigeduca_termos_config_v1',
@@ -3263,11 +3263,8 @@
     html =
       replaceAllSafe(
         html,
-        '<<ESCOLA_NOME_CURTO>>',
-        data.escola.replace(
-          /^Escola Estadual\s*/i,
-          ''
-        ).trim()
+        '<<ESCOLA_NOME>>',
+        data.escola
       );
 
     html =
@@ -3288,7 +3285,7 @@
       replaceAllSafe(
         html,
         '<<MUNICIPIO>>',
-        `${data.municipio} - ${data.uf}`
+        data.municipio
       );
 
     html =
@@ -3329,7 +3326,7 @@
       replaceAllSafe(
         html,
         '<<LOCAL_E_DATA>>',
-        `${data.municipioCabecalho || data.municipio} - MT,\n${todayText}.`
+        `MT,\n${todayText}.`
       );
 
     return html;
@@ -4279,23 +4276,23 @@ Os dados pessoais dos estudantes serão tratados para as seguintes finalidades: 
 </p>
 
 <p class="section-text">
-Poderão ser tratados, conforme a necessidade, a etapa de ensino e as finalidades institucionais aplicáveis, os seguintes dados pessoais e dados pessoais sensíveis: nome civil e/ou nome social; data de nascimento; filiação; endereço; telefone; e-mail; documentos de identificação; CPF; dados relacionados à matrícula e à vida escolar; dados de saúde, quando necessários ao atendimento das finalidades institucionais; informações relacionadas a necessidades educacionais específicas; e demais informações necessárias ao cumprimento das atribuições legais e institucionais da unidade escolar.
+Poderão ser tratados, conforme a necessidade, a etapa de ensino e as finalidades institucionais aplicáveis, os seguintes dados pessoais e dados pessoais sensíveis: nome civil e/ou nome social, data de nascimento, nacionalidade e naturalidade, CPF, RG ou outro documento oficial de identificação, endereço residencial, telefone e e-mail, dados dos pais ou responsáveis legais, histórico escolar, certificados e demais documentos da vida escolar, bem como, quando necessários ao atendimento das finalidades institucionais, sexo, raça/cor autodeclarada, informações relacionadas à saúde necessárias ao atendimento escolar, informações sobre atendimento educacional especializado, necessidades nutricionais, tipo sanguíneo, Número de Identificação Social (NIS) e Código Internacional de Doenças (CID), quando aplicável.
 </p>
 
 <p class="section">
-4. Base legal:
+4. Compartilhamento de Dados:
 </p>
 
 <p class="section-text">
-O tratamento dos dados pessoais será realizado com fundamento nas bases legais previstas na Lei nº 13.709/2018, especialmente para o cumprimento de obrigação legal ou regulatória, para a execução de políticas públicas, para o exercício regular de direitos e para a proteção da vida e da incolumidade física do titular, quando aplicáveis.
+Os dados pessoais poderão ser compartilhados, sempre que necessário e observado o disposto na LGPD, com órgãos e entidades da Administração Pública, quando houver obrigação legal ou regulamentar, órgãos de controle, fiscalização e supervisão da educação, autoridades públicas competentes e instituições parceiras que executem atividades educacionais, culturais, esportivas ou recreativas vinculadas às finalidades institucionais da SEDUC/MT, sendo que todo tratamento e compartilhamento observará base legal adequada, finalidade específica, necessidade, segurança e os demais princípios previstos na Lei Geral de Proteção de Dados Pessoais.
 </p>
 
 <p class="section">
-5. Compartilhamento dos dados:
+5. Direitos dos Titulares dos Dados:
 </p>
 
 <p class="section-text">
-Os dados poderão ser compartilhados com órgãos públicos, sistemas oficiais de informação e instituições parceiras quando necessário ao cumprimento das finalidades institucionais, das obrigações legais e das políticas públicas educacionais.
+Os pais ou responsáveis, a qualquer momento, têm o direito de: confirmação da existência de tratamento; acessar os dados pessoais do estudante e solicitar a correção de dados incompletos, inexatos ou desatualizados; e solicitar a anonimização, bloqueio ou eliminação de dados desnecessários, excessivos ou tratados em desconformidade com a LGPD;
 </p>
 
 </div>
@@ -4321,49 +4318,61 @@ TERMO DE CIÊNCIA DO TRATAMENTO DE DADOS PESSOAIS
 <div class="body">
 
 <p class="continuation-top">
-O responsável declara estar ciente de que poderá exercer, nos termos da legislação aplicável, os direitos relativos aos dados pessoais, bem como obter informações sobre o tratamento realizado pela instituição.
+Eventuais alterações relevantes nas finalidades ou nas condições de tratamento serão informadas ao titular ou ao responsável legal, observada a base legal aplicável.
 </p>
 
 <p class="section">
-6. Segurança:
+6. Segurança dos Dados:
 </p>
 
 <p class="section-text">
-A Secretaria de Estado de Educação e as unidades escolares adotarão medidas técnicas e administrativas aptas a proteger os dados pessoais contra acessos não autorizados e situações acidentais ou ilícitas de destruição, perda, alteração, comunicação ou difusão.
+A unidade escolar adota medidas necessárias para garantir a segurança e confidencialidade dos dados pessoais, evitando acessos não autorizados, perdas, alterações ou divulgações indevidas.
+</p>
+
+<p class="paragraph">
+Durante a execução do presente Termo, os dados pessoais necessários serão tratados internamente pelos servidores autorizados, que estão diretamente envolvidos com o objeto neste Termo.
+</p>
+
+<p class="paragraph">
+A comunicação ou o uso compartilhado de dados pessoais de pessoa jurídica de direito público a pessoa de direito privado será informada à autoridade e dependerá de consentimento do titular, observados os requisitos, limites e garantias previstos na Lei Geral de Proteção de Dados Pessoais (LGPD).
+</p>
+
+<p class="paragraph">
+O Controlador responsabiliza-se pela manutenção de medidas de segurança, técnicas e administrativas aptas a proteger os dados pessoais de acessos não autorizados e de situações acidentais ou ilícitas de destruição, perda, alteração, comunicação ou qualquer forma de tratamento inadequado ou ilícito. Em conformidade ao art. 48 da Lei nº 13.709, o Controlador comunicará ao Titular e à Autoridade Nacional de Proteção de Dados (ANPD) a ocorrência de incidente de segurança que possa acarretar risco ou dano relevante ao Titular.
 </p>
 
 <p class="section">
-7. Direitos do titular:
+7. Contato para Exercício dos Direitos:
 </p>
 
 <p class="section-text">
-O titular poderá solicitar informações e exercer os direitos assegurados pela legislação de proteção de dados, observados os requisitos e procedimentos estabelecidos pela administração pública.
+Para exercer os direitos mencionados no item 5 ou esclarecer qualquer dúvida relacionada ao tratamento de dados pessoais, entre em contato com a Secretaria da unidade escolar por e-mail ou presencialmente.
 </p>
 
 <p class="section">
-8. Prazo de conservação:
+8. Tempo de Tratamento de Dados:
 </p>
 
 <p class="section-text">
-Os dados serão mantidos pelo período necessário ao cumprimento das finalidades para as quais foram coletados e, posteriormente, pelo período exigido para cumprimento de obrigações legais, regulatórias e administrativas.
+O Controlador poderá manter e tratar os dados pessoais do Titular durante todo o período em que os mesmos forem pertinentes ao alcance das finalidades listadas neste termo. Dados pessoais anonimizados, sem possibilidade de associação ao indivíduo, poderão ser mantidos por período indefinido.
+</p>
+
+<p class="paragraph">
+Os formulários que contenham dados pessoais e sensíveis, quando em formato físico, serão armazenados na pasta de vida escolar do estudante e guardados em local seguro, com acesso restrito aos agentes autorizados, e conservados pelos prazos estabelecidos na legislação, nas normas de gestão documental, asseguradas a confidencialidade e a proteção das informações.
 </p>
 
 <p class="section">
-9. Declaração:
+9. DECLARAÇÃO DO RESPONSÁVEL:
 </p>
 
 <p class="declaration">
-Eu, <strong><<NOME_RESPONSAVEL>></strong>, na qualidade de responsável legal pelo(a) estudante <strong><<NOME_ALUNO>></strong>, declaro que fui informado(a) acerca do tratamento dos dados pessoais e dados pessoais sensíveis relacionados ao estudante, nos termos deste documento, e que estou ciente das finalidades, das bases legais e das condições apresentadas.
-</p>
-
-<p class="declaration">
-Declaro, ainda, que as informações fornecidas são verdadeiras e que estou ciente de que eventual alteração dos dados cadastrais deverá ser comunicada à unidade escolar para atualização dos registros.
+Eu, <strong><<NOME_RESPONSAVEL>></strong>, responsável legal pelo(a) aluno(a) <strong><<NOME_ALUNO>></strong>, DECLARO que li e compreendi as informações contidas neste Termo de Ciência para o tratamento dos dados pessoais nos termos aqui descritos.
 </p>
 
 <p class="signature">
-Responsável: <span class="signature-line"></span>
+Assinatura: <span class="signature-line"></span>
 <span class="signature-caption">
-<<NOME_RESPONSAVEL>>
+(Responsável legal/Estudante maior de idade)
 </span>
 </p>
 
@@ -4634,17 +4643,17 @@ TERMO DE CIÊNCIA PARA USO DE IMAGEM E VOZ
 
 Eu,
 <strong><<NOME_RESPONSAVEL>></strong>,
-responsável legal por
+responsável legal pelo(a) estudante
 <strong><<NOME_ALUNO>></strong>,
-atualmente matriculado na Escola Estadual
+matriculado(a) na Escola Estadual
 <strong><<ESCOLA_NOME_CURTO>></strong>,
-ESTOU CIENTE do uso da imagem e voz do(a) estudante pela Secretaria de Estado de Educação de Mato Grosso – SEDUC/MT, para divulgação de material de conteúdo informativo voltado à educação de Mato Grosso.
+DECLARO ESTAR CIENTE de que a imagem e a voz do(a) estudante poderão ser utilizadas pela Secretaria de Estado de Educação de Mato Grosso – SEDUC/MT, para fins educacionais, institucionais e informativos, relacionados às ações desenvolvidas pela Rede Pública Estadual de Ensino.
 
 </p>
 
 <p class="paragraph">
 
-Declaro estar ciente de que o uso da imagem e da voz poderá ocorrer em registros fotográficos, gravações de áudio, vídeos, podcasts e demais materiais audiovisuais produzidos no contexto de atividades pedagógicas, culturais, esportivas, eventos escolares, projetos educacionais e demais ações institucionais promovidas pela unidade escolar, pela Diretoria Regional ou Metropolitana de Educação, pela SEDUC/MT e pelo Governo do Estado de Mato Grosso.
+Declaro estar ciente de que a utilização da imagem e da voz poderá ocorrer em fotografias, gravações de áudio, vídeos, podcasts e demais registros audiovisuais produzidos durante atividades pedagógicas, culturais, esportivas, eventos escolares, projetos educacionais e demais ações institucionais promovidas pela unidade escolar, pela Diretoria Regional ou Metropolitana de Educação, pela SEDUC/MT e pelo Governo do Estado de Mato Grosso.
 
 </p>
 
@@ -4656,7 +4665,7 @@ Estou ciente de que o presente termo terá validade durante todo o período em q
 
 <p class="paragraph">
 
-Declaro, ainda, estar ciente de que a utilização da imagem e da voz deverá observar os direitos fundamentais da pessoa, vedada qualquer utilização que implique alteração de seu contexto, desvirtuação de sua finalidade ou violação à honra, à imagem, à intimidade ou à dignidade, em conformidade com o inciso X do art. 5º da Constituição Federal, o art. 20 da Lei nº 10.406, de 10 de janeiro de 2002 (Código Civil), e os princípios estabelecidos pela Lei nº 13.709, de 14 de agosto de 2018 (Lei Geral de Proteção de Dados Pessoais – LGPD).
+Declaro estar ciente de que a utilização da imagem e da voz observará os direitos da personalidade, sendo vedada qualquer utilização que implique alteração de seu contexto, desvirtuação de sua finalidade ou violação da honra, da imagem, da intimidade ou da dignidade do estudante, em conformidade com o inciso X do art. 5º da Constituição Federal, com o art. 20 da Lei nº 10.406, de 10 de janeiro de 2002 (Código Civil), e com os princípios estabelecidos na Lei nº 13.709, de 14 de agosto de 2018 (Lei Geral de Proteção de Dados Pessoais – LGPD).
 
 </p>
 
@@ -4946,15 +4955,15 @@ TERMO DE CIÊNCIA PARA USO DE IMAGEM E VOZ
 
 Eu,
 <strong><<NOME_ALUNO>></strong>,
-atualmente matriculado na Escola Estadual
+matriculado(a) na Escola Estadual
 <strong><<ESCOLA_NOME_CURTO>></strong>,
-ESTOU CIENTE do uso da minha imagem e voz, pela Secretaria de Estado de Educação de Mato Grosso – SEDUC/MT, para divulgação de material de conteúdo informativo voltado à educação de Mato Grosso.
+DECLARO ESTAR CIENTE de que a minha imagem e voz poderão ser utilizadas pela Secretaria de Estado de Educação de Mato Grosso – SEDUC/MT, para fins educacionais, institucionais e informativos, relacionados às ações desenvolvidas pela Rede Pública Estadual de Ensino.
 
 </p>
 
 <p class="paragraph">
 
-Declaro estar ciente de que o uso da imagem e da voz poderá ocorrer em registros fotográficos, gravações de áudio, vídeos, podcasts e demais materiais audiovisuais produzidos no contexto de atividades pedagógicas, culturais, esportivas, eventos escolares, projetos educacionais e demais ações institucionais promovidas pela unidade escolar, pela Diretoria Regional ou Metropolitana de Educação, pela SEDUC/MT e pelo Governo do Estado de Mato Grosso.
+Declaro estar ciente de que a utilização da imagem e da voz poderá ocorrer em fotografias, gravações de áudio, vídeos, podcasts e demais registros audiovisuais produzidos durante atividades pedagógicas, culturais, esportivas, eventos escolares, projetos educacionais e demais ações institucionais promovidas pela unidade escolar, pela Diretoria Regional ou Metropolitana de Educação, pela SEDUC/MT e pelo Governo do Estado de Mato Grosso.
 
 </p>
 
@@ -4966,7 +4975,7 @@ Estou ciente de que o presente termo terá validade durante todo o período em q
 
 <p class="paragraph">
 
-Declaro, ainda, estar ciente de que a utilização da imagem e da voz deverá observar os direitos fundamentais da pessoa, vedada qualquer utilização que implique alteração de seu contexto, desvirtuação de sua finalidade ou violação à honra, à imagem, à intimidade ou à dignidade, em conformidade com o inciso X do art. 5º da Constituição Federal, o art. 20 da Lei nº 10.406, de 10 de janeiro de 2002 (Código Civil), e os princípios estabelecidos pela Lei nº 13.709, de 14 de agosto de 2018 (Lei Geral de Proteção de Dados Pessoais – LGPD).
+Declaro estar ciente de que a utilização da imagem e da voz observará os direitos da personalidade, sendo vedada qualquer utilização que implique alteração de seu contexto, desvirtuação de sua finalidade ou violação da minha honra, imagem, intimidade ou dignidade, em conformidade com o inciso X do art. 5º da Constituição Federal, com o art. 20 da Lei nº 10.406, de 10 de janeiro de 2002 (Código Civil), e com os princípios estabelecidos na Lei nº 13.709, de 14 de agosto de 2018 (Lei Geral de Proteção de Dados Pessoais – LGPD).
 
 </p>
 
@@ -5137,6 +5146,21 @@ body{
   text-align:justify;
 }
 
+.legal-list{
+  margin:
+    0
+    0
+    5.6mm;
+
+  padding-left:13mm;
+}
+
+.legal-list li{
+  margin-bottom:2mm;
+
+  text-align:justify;
+}
+
 .quote{
   margin:
     5mm
@@ -5280,84 +5304,73 @@ TERMO DE COMPROMISSO FAMILIAR PARA O ANO LETIVO SUBSEQUENTE
 
 Eu,
 <strong><<NOME_RESPONSAVEL>></strong>,
-responsável legal pelo(a) estudante
+portador(a) da Carteira de Identidade nº
+<strong><<RG_RESPONSAVEL>></strong>,
+inscrito(a) no CPF nº
+<strong><<CPF_RESPONSAVEL>></strong>,
+residente e domiciliado(a) à
+<strong><<ENDERECO_ALUNO>></strong>,
+Município de
+<strong><<MUNICIPIO>></strong>,
+Estado de Mato Grosso, responsável legal pelo(a) estudante
 <strong><<NOME_ALUNO>></strong>,
-matriculado(a) na Escola Estadual
-<strong><<ESCOLA_NOME_CURTO>></strong>,
-declaro estar ciente da importância da frequência escolar e do acompanhamento permanente da vida escolar do(a) estudante.
-
-</p>
-
-<p class="legal-paragraph">
-
-O presente Termo de Compromisso Familiar tem por finalidade fortalecer a corresponsabilidade entre a família e a escola, contribuindo para a permanência, a frequência e o sucesso escolar do(a) estudante durante o ano letivo de <strong><<ANO_LETIVO>></strong>.
-
-</p>
-
-<p class="legal-paragraph">
-
-Declaro estar ciente de que a família possui papel fundamental no acompanhamento da frequência, do rendimento e do desenvolvimento escolar, devendo manter comunicação com a unidade escolar sempre que houver situações que possam comprometer a participação do(a) estudante nas atividades educacionais.
+matriculado(a) na
+<strong><<ESCOLA_NOME>></strong>,
+para o ano letivo de
+<strong><<ANO_LETIVO>></strong>,
+firmo o presente Termo de Compromisso com a Frequência Escolar, assumindo as seguintes responsabilidades:
 
 </p>
 
 <p class="section-title">
-I – DA IDENTIFICAÇÃO
+I – DO COMPROMISSO
 </p>
 
-<div class="data-field">
-Estudante:
-<span class="data-value">
-<<NOME_ALUNO>>
-</span>
-</div>
+<p class="legal-paragraph">
+Comprometo-me a:
+</p>
 
-<div class="data-field">
-Endereço:
-<span class="data-value">
-<<ENDERECO_ALUNO>>
-</span>
-</div>
+<ul class="legal-list">
 
-<div class="data-field">
-Município:
-<span class="data-value">
-<<MUNICIPIO>>
-</span>
-</div>
+<li>
+assegurar a frequência regular do(a) estudante às atividades escolares durante todo o ano letivo;
+</li>
 
-<div class="data-field">
-RG do Responsável:
-<span class="data-value">
-<<RG_RESPONSAVEL>>
-</span>
-</div>
+<li>
+acompanhar sua vida escolar, observando sua assiduidade, rendimento e participação nas atividades propostas pela unidade escolar;
+</li>
 
-<div class="data-field">
-CPF do Responsável:
-<span class="data-value">
-<<CPF_RESPONSAVEL>>
-</span>
-</div>
+<li>
+comunicar à escola, com a maior brevidade possível, qualquer situação que impeça temporariamente a frequência do(a) estudante;
+</li>
+
+<li>
+apresentar documentação comprobatória, quando necessária, para justificar ausências, conforme as normas da unidade escolar e da legislação vigente;
+</li>
+
+<li>
+manter atualizados meus dados cadastrais junto à escola, possibilitando a comunicação entre a família e a instituição de ensino;
+</li>
+
+<li>
+participar das reuniões, atendimentos e demais ações promovidas pela escola, colaborando com o desenvolvimento educacional do(a) estudante.
+</li>
+
+</ul>
 
 <p class="section-title">
-II – DO COMPROMISSO
+II – DA FUNDAMENTAÇÃO LEGAL
 </p>
 
 <p class="legal-paragraph">
 
-Comprometo-me a acompanhar a frequência escolar do(a) estudante, verificando a regularidade de sua presença nas aulas e adotando as providências necessárias diante de faltas que possam prejudicar sua aprendizagem.
+Declaro estar ciente de que a educação constitui direito de todos e dever do Estado e da família, conforme estabelece o art. 205 da Constituição Federal de 1988:
 
 </p>
 
-<p class="legal-paragraph">
+<p class="quote">
 
-Comprometo-me, ainda, a manter meus dados de contato e endereço atualizados junto à unidade escolar e a atender, sempre que possível, às convocações, reuniões e orientações da equipe escolar relacionadas à vida acadêmica do(a) estudante.
-
-</p>
-
-<p class="legal-paragraph">
-
-Comprometo-me a comunicar previamente à escola, sempre que possível, eventuais ausências do(a) estudante, apresentando justificativa ou documentação quando necessária.
+"A educação, direito de todos e dever do Estado e da família, será promovida e incentivada com a colaboração da sociedade, visando ao pleno desenvolvimento da pessoa, seu preparo para o exercício da cidadania e sua qualificação para o trabalho."
 
 </p>
 
@@ -5394,6 +5407,18 @@ SEDUC – Secretaria de Estado de Educação
 </header>
 
 <div class="body">
+
+<p class="legal-paragraph">
+
+Declaro, ainda, ter conhecimento de que, nos termos do art. 24, inciso VI, da Lei nº 9.394/1996 (Lei de Diretrizes e Bases da Educação Nacional), é exigida a frequência mínima de <strong>75% (setenta e cinco por cento)</strong> do total de horas letivas para aprovação, cabendo à escola o controle da frequência dos estudantes.
+
+</p>
+
+<p class="legal-paragraph">
+
+Estou ciente, igualmente, de que o Estatuto da Criança e do Adolescente (Lei nº 8.069/1990) assegura o direito à educação e estabelece a corresponsabilidade da família na garantia do acesso e da permanência da criança e do adolescente na escola.
+
+</p>
 
 <p class="section-title family-section">
 III – DA RESPONSABILIDADE DA FAMÍLIA
