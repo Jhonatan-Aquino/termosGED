@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SIGEDUCA - Emissão de Termos
 // @namespace    http://tampermonkey.net/
-// @version      1.1.0
+// @version      1.1.1
 // @description  Emissão de termos escolares em HTML/A4 a partir dos dados do cadastro do aluno.
 // @match        http://sigeduca.seduc.mt.gov.br/ged/*
 // @match        https://sigeduca.seduc.mt.gov.br/ged/*
@@ -47,7 +47,7 @@
    */
 
   const CONFIG = {
-    scriptVersion: '1.1.0',
+    scriptVersion: '1.1.1',
     versionSeenStorageKey: 'sigeduca_termos_versao_vista',
 
     cookieName: 'sigeduca_termos_config_v1',
@@ -1101,6 +1101,31 @@
         font-family:inherit !important;
       }
 
+      #${CONFIG.panelId}.sigeduca-term-dragging,
+      #${CONFIG.panelId}.sigeduca-term-dragging *{
+        user-select:none;
+      }
+
+      #${CONFIG.panelId} .sigeduca-term-handle{
+        width:36px;
+        height:5px;
+        margin:0 auto 10px;
+        border-radius:3px;
+        background:rgba(0,0,0,.15);
+        cursor:grab;
+        touch-action:none;
+        transition:background .15s ease;
+      }
+
+      #${CONFIG.panelId} .sigeduca-term-handle:hover{
+        background:rgba(0,0,0,.28);
+      }
+
+      #${CONFIG.panelId} .sigeduca-term-handle.sigeduca-term-handle-dragging{
+        cursor:grabbing;
+        background:rgba(0,0,0,.35);
+      }
+
       #${CONFIG.panelId} .sigeduca-term-title{
         font-weight:600;
         font-size:14px;
@@ -1277,20 +1302,88 @@
   // POSICIONAMENTO
   // ============================================================
 
-  function positionPanel(targetDoc) {
-    const photo =
-      $(
-        targetDoc,
-        `#${CONFIG.anchorId}`
-      );
+  let panelDragged = false;
+  let panelDragPosition = null;
 
+  function clampPanelPosition(
+    targetDoc,
+    panel,
+    left,
+    top
+  ) {
+    const win =
+      targetDoc.defaultView;
+
+    const width =
+      panel.offsetWidth || 228;
+
+    const height =
+      panel.offsetHeight || 200;
+
+    const maxLeft =
+      win.innerWidth -
+      width -
+      6;
+
+    const maxTop =
+      win.innerHeight -
+      height -
+      6;
+
+    return {
+      left:
+        Math.min(
+          Math.max(left, 6),
+          Math.max(6, maxLeft)
+        ),
+
+      top:
+        Math.min(
+          Math.max(top, 6),
+          Math.max(6, maxTop)
+        )
+    };
+  }
+
+  function positionPanel(targetDoc) {
     const panel =
       $(
         targetDoc,
         `#${CONFIG.panelId}`
       );
 
-    if (!photo || !panel) {
+    if (!panel) {
+      return;
+    }
+
+    if (
+      panelDragged &&
+      panelDragPosition
+    ) {
+      const clamped =
+        clampPanelPosition(
+          targetDoc,
+          panel,
+          panelDragPosition.left,
+          panelDragPosition.top
+        );
+
+      panel.style.left =
+        `${Math.round(clamped.left)}px`;
+
+      panel.style.top =
+        `${Math.round(clamped.top)}px`;
+
+      return;
+    }
+
+    const photo =
+      $(
+        targetDoc,
+        `#${CONFIG.anchorId}`
+      );
+
+    if (!photo) {
       return;
     }
 
@@ -1337,6 +1430,119 @@
 
     panel.style.top =
       `${Math.round(top)}px`;
+  }
+
+  function makePanelDraggable(
+    targetDoc,
+    panel
+  ) {
+    const handle =
+      $(
+        panel,
+        '.sigeduca-term-handle'
+      );
+
+    if (!handle) {
+      return;
+    }
+
+    handle.addEventListener(
+      'pointerdown',
+      (event) => {
+        if (
+          event.button !== 0 &&
+          event.pointerType === 'mouse'
+        ) {
+          return;
+        }
+
+        const rect =
+          panel.getBoundingClientRect();
+
+        const startX = event.clientX;
+        const startY = event.clientY;
+        const startLeft = rect.left;
+        const startTop = rect.top;
+
+        try {
+          handle.setPointerCapture(
+            event.pointerId
+          );
+        } catch {
+          // captura indisponível
+        }
+
+        handle.classList.add(
+          'sigeduca-term-handle-dragging'
+        );
+
+        panel.classList.add(
+          'sigeduca-term-dragging'
+        );
+
+        const onMove = (moveEvent) => {
+          const dx =
+            moveEvent.clientX - startX;
+
+          const dy =
+            moveEvent.clientY - startY;
+
+          const clamped =
+            clampPanelPosition(
+              targetDoc,
+              panel,
+              startLeft + dx,
+              startTop + dy
+            );
+
+          panel.style.left =
+            `${Math.round(clamped.left)}px`;
+
+          panel.style.top =
+            `${Math.round(clamped.top)}px`;
+
+          panelDragPosition = clamped;
+        };
+
+        const onUp = (upEvent) => {
+          panelDragged = true;
+
+          handle.classList.remove(
+            'sigeduca-term-handle-dragging'
+          );
+
+          panel.classList.remove(
+            'sigeduca-term-dragging'
+          );
+
+          handle.removeEventListener(
+            'pointermove',
+            onMove
+          );
+
+          try {
+            handle.releasePointerCapture(
+              upEvent.pointerId
+            );
+          } catch {
+            // captura indisponível
+          }
+        };
+
+        handle.addEventListener(
+          'pointermove',
+          onMove
+        );
+
+        handle.addEventListener(
+          'pointerup',
+          onUp,
+          { once: true }
+        );
+
+        event.preventDefault();
+      }
+    );
   }
 
   function removePanel(targetDoc) {
@@ -1541,6 +1747,12 @@
       CONFIG.panelId;
 
     panel.innerHTML = `
+      <div
+        class="sigeduca-term-handle"
+        title="Arraste para mover"
+        aria-hidden="true"
+      ></div>
+
       <div class="sigeduca-term-title">
         Emitir Documentos
       </div>
@@ -1596,6 +1808,11 @@
 
     positionPanel(
       targetDoc
+    );
+
+    makePanelDraggable(
+      targetDoc,
+      panel
     );
 
     panel
