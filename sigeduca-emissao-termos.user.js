@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SIGEDUCA - Emissão de Termos
 // @namespace    http://tampermonkey.net/
-// @version      1.0.8
+// @version      1.0.9
 // @description  Emissão de termos escolares em HTML/A4 a partir dos dados do cadastro do aluno.
 // @match        http://sigeduca.seduc.mt.gov.br/ged/*
 // @match        https://sigeduca.seduc.mt.gov.br/ged/*
@@ -47,12 +47,16 @@
    */
 
   const CONFIG = {
+    scriptVersion: '1.0.9',
+    versionSeenStorageKey: 'sigeduca_termos_versao_vista',
+
     cookieName: 'sigeduca_termos_config_v1',
     cookieMaxAge: 60 * 60 * 24 * 365,
 
     panelId: 'sigeducaTermosPanel',
     modalId: 'sigeducaTermosModal',
     styleId: 'sigeducaTermosCSS',
+    glowStyleId: 'sigeducaTermosGlowCSS',
 
     anchorId: 'FOTOALUNO',
 
@@ -1332,6 +1336,184 @@
   }
 
   // ============================================================
+  // EFEITO DE VERSÃO (NOVO / ATUALIZADO)
+  // ============================================================
+
+  let versionGlowTriggered = false;
+
+  function injectVersionGlowCSS(targetDoc) {
+    if (
+      targetDoc.getElementById(
+        CONFIG.glowStyleId
+      )
+    ) {
+      return;
+    }
+
+    const style =
+      targetDoc.createElement(
+        'style'
+      );
+
+    style.id =
+      CONFIG.glowStyleId;
+
+    style.textContent = `
+      .sigeduca-glow-layer{
+        position:absolute;
+        inset:0;
+        z-index:-1;
+        border-radius:inherit;
+        opacity:0;
+        pointer-events:none;
+      }
+
+      .sigeduca-glow-layer.sigeduca-glow-before{
+        background:conic-gradient(
+          from 0deg,
+          rgba(8,125,255,.45),
+          transparent,
+          rgba(52,199,89,.4),
+          transparent,
+          rgba(8,125,255,.5)
+        );
+        filter:blur(26px);
+        animation:sigeduca-glow-reverse 2000ms ease-out;
+      }
+
+      .sigeduca-glow-layer.sigeduca-glow-after{
+        background:conic-gradient(
+          from 0deg,
+          rgba(52,199,89,.5),
+          rgba(8,125,255,.6),
+          transparent,
+          rgba(255,255,255,.75),
+          rgba(52,199,89,.5)
+        );
+        filter:blur(38px);
+        animation:sigeduca-glow-forward 2000ms ease-out;
+      }
+
+      @keyframes sigeduca-glow-forward{
+        0%{
+          opacity:0;
+          transform:scale(1);
+        }
+        10%{
+          opacity:1;
+          transform:scale(1.12);
+        }
+        50%{
+          opacity:.75;
+          transform:scale(1.05);
+        }
+        100%{
+          opacity:0;
+          transform:scale(1);
+        }
+      }
+
+      @keyframes sigeduca-glow-reverse{
+        0%{
+          opacity:0;
+          transform:scale(1);
+        }
+        15%{
+          opacity:.9;
+          transform:scale(1.08);
+        }
+        55%{
+          opacity:.5;
+          transform:scale(1.03);
+        }
+        100%{
+          opacity:0;
+          transform:scale(1);
+        }
+      }
+    `;
+
+    targetDoc.head.appendChild(
+      style
+    );
+  }
+
+  function triggerVersionGlow(
+    targetDoc,
+    panel
+  ) {
+    if (versionGlowTriggered) {
+      return;
+    }
+
+    versionGlowTriggered = true;
+
+    let lastSeenVersion = null;
+
+    try {
+      lastSeenVersion =
+        window.localStorage.getItem(
+          CONFIG.versionSeenStorageKey
+        );
+    } catch {
+      // localStorage indisponível (ex.: modo privado)
+    }
+
+    if (
+      lastSeenVersion ===
+      CONFIG.scriptVersion
+    ) {
+      return;
+    }
+
+    injectVersionGlowCSS(targetDoc);
+
+    const glowBefore =
+      targetDoc.createElement(
+        'div'
+      );
+
+    const glowAfter =
+      targetDoc.createElement(
+        'div'
+      );
+
+    glowBefore.className =
+      'sigeduca-glow-layer sigeduca-glow-before';
+
+    glowAfter.className =
+      'sigeduca-glow-layer sigeduca-glow-after';
+
+    const duration = 2000;
+    const delay = 400;
+
+    setTimeout(
+      () => {
+        panel.prepend(glowAfter);
+        panel.prepend(glowBefore);
+
+        setTimeout(
+          () => {
+            glowBefore.remove();
+            glowAfter.remove();
+
+            try {
+              window.localStorage.setItem(
+                CONFIG.versionSeenStorageKey,
+                CONFIG.scriptVersion
+              );
+            } catch {
+              // localStorage indisponível
+            }
+          },
+          duration
+        );
+      },
+      delay
+    );
+  }
+
+  // ============================================================
   // PAINEL
   // ============================================================
 
@@ -1449,6 +1631,11 @@
           }
         }
       );
+
+    triggerVersionGlow(
+      targetDoc,
+      panel
+    );
 
     return panel;
   }
