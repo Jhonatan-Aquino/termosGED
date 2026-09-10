@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SIGEDUCA - Emissão de Termos
 // @namespace    http://tampermonkey.net/
-// @version      1.6.0
+// @version      1.6.1
 // @description  Emissão de termos escolares em HTML/A4 a partir dos dados do cadastro do aluno.
 // @match        http://sigeduca.seduc.mt.gov.br/ged/*
 // @match        https://sigeduca.seduc.mt.gov.br/ged/*
@@ -48,7 +48,7 @@
    */
 
   const CONFIG = {
-    scriptVersion: '1.6.0',
+    scriptVersion: '1.6.1',
     versionSeenStorageKey: 'sigeduca_termos_versao_vista',
 
     cookieName: 'sigeduca_termos_config_v1',
@@ -3267,11 +3267,22 @@
         data.escola
       );
 
+    const anoLetivoNum =
+      parseInt(
+        data.anoLetivo,
+        10
+      );
+
+    const anoLetivoSubsequente =
+      Number.isNaN(anoLetivoNum) ?
+        data.anoLetivo :
+        String(anoLetivoNum + 1);
+
     html =
       replaceAllSafe(
         html,
         '<<ANO_LETIVO>>',
-        data.anoLetivo
+        anoLetivoSubsequente
       );
 
     html =
@@ -4380,6 +4391,10 @@ Assinatura: <span class="signature-line"></span>
 <<LOCAL_E_DATA>>
 </p>
 
+<p class="footer-note">
+Este termo deve ser preenchido, assinado e entregue na secretaria da unidade escolar, que se compromete a tratar os dados pessoais em conformidade com a LGPD e a respeitar a privacidade e a proteção dos dados dos estudantes e seus responsáveis.
+</p>
+
 </div>
 
 </section>
@@ -5131,6 +5146,14 @@ body{
   text-align:left;
 }
 
+.doc-title{
+  margin-bottom:8mm;
+
+  font-weight:700;
+
+  text-align:center;
+}
+
 .family-section{
   margin-top:8mm;
 }
@@ -5144,6 +5167,10 @@ body{
   text-indent:8mm;
 
   text-align:justify;
+}
+
+.opening-paragraph{
+  line-height:1.65;
 }
 
 .legal-list{
@@ -5296,11 +5323,11 @@ SEDUC – Secretaria de Estado de Educação
 
 <div class="body">
 
-<div class="section-title">
+<div class="doc-title">
 TERMO DE COMPROMISSO FAMILIAR PARA O ANO LETIVO SUBSEQUENTE
 </div>
 
-<p class="legal-paragraph">
+<p class="legal-paragraph opening-paragraph">
 
 Eu,
 <strong><<NOME_RESPONSAVEL>></strong>,
