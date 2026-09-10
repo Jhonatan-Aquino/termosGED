@@ -1,12 +1,14 @@
 // ==UserScript==
 // @name         SIGEDUCA - Emissão de Termos
 // @namespace    http://tampermonkey.net/
-// @version      1.0.4
+// @version      1.0.5
 // @description  Emissão de termos escolares em HTML/A4 a partir dos dados do cadastro do aluno.
 // @match        http://sigeduca.seduc.mt.gov.br/ged/*
 // @match        https://sigeduca.seduc.mt.gov.br/ged/*
 // @grant        none
 // @run-at       document-idle
+// @updateURL    https://raw.githubusercontent.com/Jhonatan-Aquino/termosGED/claude/macro-verification-aisf56/sigeduca-emissao-termos.user.js
+// @downloadURL  https://raw.githubusercontent.com/Jhonatan-Aquino/termosGED/claude/macro-verification-aisf56/sigeduca-emissao-termos.user.js
 // ==/UserScript==
 
 (() => {
@@ -825,6 +827,12 @@
         '#CTLGERPESNOMRESP'
       );
 
+    const cpfResponsavel =
+      textOf(
+        doc,
+        '#CTLGERPESRESPCPF'
+      );
+
     // ----------------------------------------------------------
     // ENDEREÇO
     // ----------------------------------------------------------
@@ -974,6 +982,9 @@
 
       responsavel:
         responsavel,
+
+      cpfResponsavel:
+        cpfResponsavel,
 
       endereco:
         enderecoPartes.join(', '),
@@ -1987,14 +1998,11 @@
         responsibleRG
       );
 
-    /*
-     * O CPF do responsável ainda não possui campo identificado
-     * no cadastro utilizado.
-     */
     html =
       replaceAllSafe(
         html,
         '<<CPF_RESPONSAVEL>>',
+        data.cpfResponsavel ||
         '[CPF DO RESPONSÁVEL]'
       );
 
