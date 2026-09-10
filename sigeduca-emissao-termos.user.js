@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SIGEDUCA - Emissão de Termos
 // @namespace    http://tampermonkey.net/
-// @version      1.2.1
+// @version      1.2.2
 // @description  Emissão de termos escolares em HTML/A4 a partir dos dados do cadastro do aluno.
 // @match        http://sigeduca.seduc.mt.gov.br/ged/*
 // @match        https://sigeduca.seduc.mt.gov.br/ged/*
@@ -48,7 +48,7 @@
    */
 
   const CONFIG = {
-    scriptVersion: '1.2.1',
+    scriptVersion: '1.2.2',
     versionSeenStorageKey: 'sigeduca_termos_versao_vista',
 
     cookieName: 'sigeduca_termos_config_v1',
@@ -1112,30 +1112,29 @@
         background:rgba(0,0,0,.35);
       }
 
-      #${CONFIG.panelId} .sigeduca-term-header-row{
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-        gap:8px;
-        margin:0 0 10px 2px;
+      #${CONFIG.panelId}.sigeduca-term-sliding{
+        transition:left .32s cubic-bezier(.4,0,.2,1);
       }
 
       #${CONFIG.panelId} .sigeduca-term-title{
         font-weight:600;
         font-size:14px;
         letter-spacing:-.2px;
+        margin:0 26px 10px 2px;
         color:var(--sigeduca-navy);
       }
 
       #${CONFIG.panelId} .sigeduca-term-close{
+        position:absolute;
+        top:9px;
+        right:9px;
         display:flex;
         align-items:center;
         justify-content:center;
-        flex:none;
         width:20px;
         height:20px;
         padding:0;
-        margin:0 2px 0 0;
+        margin:0;
         border:none;
         border-radius:50%;
         background:transparent;
@@ -1179,11 +1178,8 @@
         display:none;
       }
 
-      #${CONFIG.panelId}.sigeduca-term-collapsed .sigeduca-term-header-row{
-        margin:0;
-      }
-
       #${CONFIG.panelId}.sigeduca-term-collapsed .sigeduca-term-title{
+        margin:0;
         white-space:nowrap;
       }
 
@@ -1200,11 +1196,16 @@
         font-size:12.5px;
         font-weight:500;
         cursor:pointer;
-        transition:background .2s ease, transform .15s ease;
+        transition:background .25s ease, transform .15s ease;
       }
 
       #${CONFIG.panelId} button.sigeduca-term-btn:hover{
-        background:rgba(255,255,255,.92);
+        background:linear-gradient(
+          135deg,
+          rgba(8,125,255,.16) 0%,
+          rgba(112,142,178,.14) 55%,
+          rgba(233,240,250,.6) 100%
+        );
       }
 
       #${CONFIG.panelId} button.sigeduca-term-btn:active{
@@ -1218,14 +1219,15 @@
         gap:6px;
         width:100%;
         margin-top:8px;
-        padding:8px 2px 0;
+        padding:8px 12px;
         border:none;
-        border-top:1px solid rgba(0,0,0,.08);
-        background:transparent;
+        border-radius:12px;
+        background:rgba(120,140,170,.1);
         color:var(--sigeduca-muted);
         text-align:center;
         font-size:11px;
         cursor:pointer;
+        transition:background .2s ease, color .2s ease;
       }
 
       #${CONFIG.panelId} button.sigeduca-term-settings svg{
@@ -1236,6 +1238,7 @@
       }
 
       #${CONFIG.panelId} button.sigeduca-term-settings:hover{
+        background:rgba(120,140,170,.2);
         color:var(--sigeduca-blue);
       }
 
@@ -1490,6 +1493,9 @@
     if (
       panel.classList.contains(
         'sigeduca-term-collapsed'
+      ) ||
+      panel.classList.contains(
+        'sigeduca-term-sliding'
       )
     ) {
       return;
@@ -1734,7 +1740,34 @@
     );
   }
 
-  function collapsePanel(panel) {
+  function onceTransitionEnd(
+    panel,
+    property,
+    callback
+  ) {
+    const handler = (event) => {
+      if (event.propertyName !== property) {
+        return;
+      }
+
+      panel.removeEventListener(
+        'transitionend',
+        handler
+      );
+
+      callback();
+    };
+
+    panel.addEventListener(
+      'transitionend',
+      handler
+    );
+  }
+
+  function collapsePanel(
+    hostDoc,
+    panel
+  ) {
     if (!panelDragPosition) {
       const rect =
         panel.getBoundingClientRect();
@@ -1751,23 +1784,65 @@
       panelDragPosition
     );
 
+    /*
+     * Desliza o painel (ainda no seu formato normal) para fora da
+     * tela pela direita e só troca para a aba compacta quando ele
+     * já estiver fora de vista — assim a mudança de tamanho não
+     * "pisca", ela acontece enquanto está invisível.
+     */
+    const offscreenLeft =
+      hostDoc.defaultView
+        .innerWidth + 40;
+
     panel.classList.add(
-      'sigeduca-term-collapsed'
+      'sigeduca-term-sliding'
     );
 
-    panel.style.left = '';
-    panel.style.right = '0px';
+    panel.style.left =
+      `${offscreenLeft}px`;
+
+    onceTransitionEnd(
+      panel,
+      'left',
+      () => {
+        panel.classList.remove(
+          'sigeduca-term-sliding'
+        );
+
+        panel.classList.add(
+          'sigeduca-term-collapsed'
+        );
+
+        panel.style.left = '';
+        panel.style.right = '0px';
+      }
+    );
   }
 
   function expandPanel(
     hostDoc,
     panel
   ) {
+    const win =
+      hostDoc.defaultView;
+
+    const offscreenLeft =
+      win.innerWidth + 40;
+
+    /*
+     * Troca para o formato normal (ainda fora da tela) e só então
+     * ativa a transição para deslizar de volta até a posição
+     * anterior — o mesmo truque do fechar, em ordem inversa.
+     */
     panel.classList.remove(
       'sigeduca-term-collapsed'
     );
 
     panel.style.right = '';
+    panel.style.left =
+      `${offscreenLeft}px`;
+
+    void panel.offsetWidth;
 
     const clamped =
       clampPanelPosition(
@@ -1777,11 +1852,25 @@
         panelDragPosition.top
       );
 
+    panel.style.top =
+      `${Math.round(clamped.top)}px`;
+
+    panel.classList.add(
+      'sigeduca-term-sliding'
+    );
+
     panel.style.left =
       `${Math.round(clamped.left)}px`;
 
-    panel.style.top =
-      `${Math.round(clamped.top)}px`;
+    onceTransitionEnd(
+      panel,
+      'left',
+      () => {
+        panel.classList.remove(
+          'sigeduca-term-sliding'
+        );
+      }
+    );
   }
 
   function removePanel(targetDoc) {
@@ -1995,21 +2084,19 @@
         aria-hidden="true"
       ></div>
 
-      <div class="sigeduca-term-header-row">
-        <div class="sigeduca-term-title">
-          Emitir Documentos
-        </div>
-
-        <button
-          class="sigeduca-term-close"
-          title="Fechar"
-          aria-label="Fechar"
-        >
-          <svg viewBox="0 0 12 12" aria-hidden="true">
-            <path d="M1 1l10 10M11 1L1 11"/>
-          </svg>
-        </button>
+      <div class="sigeduca-term-title">
+        Emitir Documentos
       </div>
+
+      <button
+        class="sigeduca-term-close"
+        title="Fechar"
+        aria-label="Fechar"
+      >
+        <svg viewBox="0 0 12 12" aria-hidden="true">
+          <path d="M1 1l10 10M11 1L1 11"/>
+        </svg>
+      </button>
 
       <button
         class="sigeduca-term-btn"
@@ -2131,7 +2218,10 @@
         'click',
         (event) => {
           event.stopPropagation();
-          collapsePanel(panel);
+          collapsePanel(
+            hostDoc,
+            panel
+          );
         }
       );
 
