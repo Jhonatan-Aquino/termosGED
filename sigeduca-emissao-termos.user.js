@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SIGEDUCA - Emissão de Termos
 // @namespace    http://tampermonkey.net/
-// @version      1.1.2
+// @version      1.1.3
 // @description  Emissão de termos escolares em HTML/A4 a partir dos dados do cadastro do aluno.
 // @match        http://sigeduca.seduc.mt.gov.br/ged/*
 // @match        https://sigeduca.seduc.mt.gov.br/ged/*
@@ -47,10 +47,11 @@
    */
 
   const CONFIG = {
-    scriptVersion: '1.1.2',
+    scriptVersion: '1.1.3',
     versionSeenStorageKey: 'sigeduca_termos_versao_vista',
 
     cookieName: 'sigeduca_termos_config_v1',
+    positionCookieName: 'sigeduca_termos_posicao_v1',
     cookieMaxAge: 60 * 60 * 24 * 365,
 
     panelId: 'sigeducaTermosPanel',
@@ -1289,6 +1290,29 @@
   let panelDragged = false;
   let panelDragPosition = null;
 
+  (function restoreSavedPanelPosition() {
+    const saved =
+      readCookie(
+        CONFIG.positionCookieName
+      );
+
+    if (
+      saved &&
+      typeof saved.left === 'number' &&
+      typeof saved.top === 'number'
+    ) {
+      panelDragged = true;
+      panelDragPosition = saved;
+    }
+  })();
+
+  function savePanelPosition(position) {
+    writeCookie(
+      CONFIG.positionCookieName,
+      position
+    );
+  }
+
   function clampPanelPosition(
     targetDoc,
     panel,
@@ -1448,6 +1472,13 @@
         const startLeft = rect.left;
         const startTop = rect.top;
 
+        panelDragged = true;
+
+        panelDragPosition = {
+          left: startLeft,
+          top: startTop
+        };
+
         try {
           handle.setPointerCapture(
             event.pointerId
@@ -1489,8 +1520,6 @@
         };
 
         const onUp = (upEvent) => {
-          panelDragged = true;
-
           handle.classList.remove(
             'sigeduca-term-handle-dragging'
           );
@@ -1503,6 +1532,12 @@
             'pointermove',
             onMove
           );
+
+          if (panelDragPosition) {
+            savePanelPosition(
+              panelDragPosition
+            );
+          }
 
           try {
             handle.releasePointerCapture(
