@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         SIGEDUCA - Emissão de Termos
 // @namespace    http://tampermonkey.net/
-// @version      1.2.0
+// @version      1.2.1
 // @description  Emissão de termos escolares em HTML/A4 a partir dos dados do cadastro do aluno.
 // @match        http://sigeduca.seduc.mt.gov.br/ged/*
 // @match        https://sigeduca.seduc.mt.gov.br/ged/*
 // @grant        none
 // @run-at       document-idle
+// @noframes
 // @updateURL    https://raw.githubusercontent.com/Jhonatan-Aquino/termosGED/claude/macro-verification-aisf56/sigeduca-emissao-termos.user.js
 // @downloadURL  https://raw.githubusercontent.com/Jhonatan-Aquino/termosGED/claude/macro-verification-aisf56/sigeduca-emissao-termos.user.js
 // ==/UserScript==
@@ -47,7 +48,7 @@
    */
 
   const CONFIG = {
-    scriptVersion: '1.2.0',
+    scriptVersion: '1.2.1',
     versionSeenStorageKey: 'sigeduca_termos_versao_vista',
 
     cookieName: 'sigeduca_termos_config_v1',
@@ -3204,6 +3205,33 @@
   let attempts = 0;
   let installedDoc = null;
   let installedHostDoc = null;
+  let isHostOwner = false;
+
+  /*
+   * O SIGEDUCA carrega a ficha do aluno dentro de um iframe cuja
+   * URL também bate com o @match do script — então, sem @noframes,
+   * o Tampermonkey injeta uma segunda instância inteira dentro
+   * desse iframe. As duas instâncias resolvem o mesmo documento
+   * "hospedeiro" (topo da página) para montar o painel, mas cada
+   * uma mantém seu próprio estado de posição em memória: sempre que
+   * o intervalo de recheque de uma instância "perdedora" disparava,
+   * ele reaplicava a posição antiga que só ela conhecia, brigando
+   * com a instância "dona" a cada ~2,5s — o vaivém constante e
+   * independente do mouse. @noframes evita a duplicidade na
+   * origem; esta trava é uma segunda camada de segurança para o
+   * caso de outro cenário produzir instâncias concorrentes.
+   */
+  function claimHostOwnership(hostDoc) {
+    const win = hostDoc.defaultView;
+
+    if (win.__sigeducaTermosOwner) {
+      return false;
+    }
+
+    win.__sigeducaTermosOwner = true;
+
+    return true;
+  }
 
   function install() {
     const studentDoc =
@@ -3238,29 +3266,31 @@
       );
 
     if (
+      !claimHostOwnership(
+        hostDoc
+      )
+    ) {
+      return;
+    }
+
+    isHostOwner = true;
+
+    if (
       $(
         hostDoc,
         `#${CONFIG.panelId}`
       )
     ) {
-      installedDoc =
-        studentDoc;
-
-      installedHostDoc =
-        hostDoc;
-
       positionPanel(
         studentDoc,
         hostDoc
       );
-
-      return;
+    } else {
+      createPanel(
+        studentDoc,
+        hostDoc
+      );
     }
-
-    createPanel(
-      studentDoc,
-      hostDoc
-    );
 
     installedDoc =
       studentDoc;
@@ -3343,6 +3373,10 @@
 
   setInterval(
     () => {
+      if (!isHostOwner) {
+        return;
+      }
+
       const studentDoc =
         findStudentDocument();
 
