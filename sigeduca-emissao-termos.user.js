@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SIGEDUCA - Emissão de Termos
 // @namespace    http://tampermonkey.net/
-// @version      1.5.0
+// @version      1.5.1
 // @description  Emissão de termos escolares em HTML/A4 a partir dos dados do cadastro do aluno.
 // @match        http://sigeduca.seduc.mt.gov.br/ged/*
 // @match        https://sigeduca.seduc.mt.gov.br/ged/*
@@ -48,7 +48,7 @@
    */
 
   const CONFIG = {
-    scriptVersion: '1.5.0',
+    scriptVersion: '1.5.1',
     versionSeenStorageKey: 'sigeduca_termos_versao_vista',
 
     cookieName: 'sigeduca_termos_config_v1',
@@ -2943,57 +2943,30 @@
 
   function showResponsibleRGModal(
     targetDoc,
-    responsavelAtual,
-    options = {}
+    responsavelAtual
   ) {
-    const required =
-      options.required === true;
-
     return new Promise(
       (resolve, reject) => {
         const { card } =
           createModalShell(
             targetDoc,
             'RG do responsável',
-            required
-              ? `O RG do responsável "${responsavelAtual || 'não informado'}" não está disponível no cadastro. Informe o RG para emitir este termo.`
-              : `O RG do responsável "${responsavelAtual || 'não informado'}" não está disponível no cadastro. Informe o RG para emitir este termo, ou deixe em branco para usar o CPF do responsável no lugar do RG.`
+            `O RG do responsável "${responsavelAtual || 'não informado'}" não está disponível no cadastro. Informe o RG para emitir este termo, ou deixe em branco para usar o CPF do responsável no lugar do RG.`
           );
 
         card.insertAdjacentHTML(
           'beforeend',
           `
           <label for="sigeducaRG">
-            RG do responsável${
-              required
-                ? ''
-                : ' (opcional)'
-            }
+            RG do responsável (opcional)
           </label>
 
           <input
             id="sigeducaRG"
             type="text"
             autocomplete="off"
-            placeholder="${
-              required
-                ? 'Ex.: 12.345.678-9'
-                : 'Ex.: 12.345.678-9 (deixe em branco para usar o CPF)'
-            }"
+            placeholder="Ex.: 12.345.678-9 (deixe em branco para usar o CPF)"
           >
-
-          ${
-            required
-              ? `
-          <div
-            class="sigeduca-modal-error"
-            id="sigeducaModalError"
-          >
-            Informe o RG do responsável.
-          </div>
-          `
-              : ''
-          }
 
           <div
             class="sigeduca-modal-actions"
@@ -3025,17 +2998,6 @@
                 )
                 ?.value
             );
-
-          if (required && !rg) {
-            card
-              .querySelector(
-                '#sigeducaModalError'
-              )
-              .style.display =
-              'block';
-
-            return;
-          }
 
           closeModal(
             targetDoc
@@ -3326,7 +3288,7 @@
       replaceAllSafe(
         html,
         '<<MUNICIPIO>>',
-        data.municipio
+        `${data.uf} - ${data.municipio}`
       );
 
     html =
@@ -3723,14 +3685,6 @@
             'O nome do Responsável 1 não está preenchido no cadastro.'
           );
         }
-
-        await showResponsibleRGModal(
-          hostDoc,
-          data.responsavel,
-          {
-            required: true
-          }
-        );
 
         if (!data.cpfAluno) {
           alert(
