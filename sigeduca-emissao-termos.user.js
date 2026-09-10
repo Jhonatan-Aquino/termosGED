@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SIGEDUCA - Emissão de Termos
 // @namespace    http://tampermonkey.net/
-// @version      1.0.6
+// @version      1.0.7
 // @description  Emissão de termos escolares em HTML/A4 a partir dos dados do cadastro do aluno.
 // @match        http://sigeduca.seduc.mt.gov.br/ged/*
 // @match        https://sigeduca.seduc.mt.gov.br/ged/*
@@ -47,6 +47,9 @@
    */
 
   const CONFIG = {
+    scriptName: 'SIGEDUCA - Emissão de Termos',
+    scriptVersion: '1.0.7',
+
     cookieName: 'sigeduca_termos_config_v1',
     cookieMaxAge: 60 * 60 * 24 * 365,
 
@@ -1058,51 +1061,102 @@
       CONFIG.styleId;
 
     style.textContent = `
+      #${CONFIG.panelId}, #${CONFIG.modalId} {
+        --sigeduca-font: "SF Pro Text", "SF Pro Icons", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+        --sigeduca-blue: #087dff;
+        --sigeduca-navy: #1d1d1f;
+        --sigeduca-muted: #666;
+        --sigeduca-danger: #ff3b30;
+      }
+
       #${CONFIG.panelId}{
         position:fixed;
         z-index:2147483000;
-        width:190px;
-        padding:10px;
-        border:1px solid #c9c9c9;
-        border-radius:9px;
-        background:#fff;
-        box-shadow:0 6px 24px rgba(0,0,0,.16);
-        font:13px Arial,Helvetica,sans-serif;
-        color:#222;
+        width:228px;
+        padding:14px 14px 12px;
+        background:rgba(237,237,237,.78);
+        border:1px solid rgba(214,214,214,.5);
+        border-radius:20px;
+        box-shadow:0 8px 32px -4px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.06);
+        backdrop-filter:blur(14px);
+        -webkit-backdrop-filter:blur(14px);
+        font-family:var(--sigeduca-font) !important;
+        color:var(--sigeduca-navy);
+      }
+
+      #${CONFIG.panelId} *{
+        box-sizing:border-box;
+        font-family:inherit !important;
       }
 
       #${CONFIG.panelId} .sigeduca-term-title{
-        font-weight:700;
-        margin:0 0 8px;
-        font-size:13px;
+        font-weight:600;
+        font-size:14px;
+        letter-spacing:-.2px;
+        margin:0 0 10px 2px;
+        color:var(--sigeduca-navy);
       }
 
       #${CONFIG.panelId} button.sigeduca-term-btn{
+        display:block;
         width:100%;
         margin:4px 0;
-        padding:8px 9px;
-        border:1px solid #d2d2d2;
-        border-radius:6px;
-        background:#f8f8f8;
-        color:#222;
+        padding:9px 12px;
+        border:none;
+        border-radius:12px;
+        background:rgba(255,255,255,.55);
+        color:#293254;
         text-align:left;
+        font-size:12.5px;
+        font-weight:500;
         cursor:pointer;
-        font:inherit;
+        transition:background .2s ease, transform .15s ease;
       }
 
       #${CONFIG.panelId} button.sigeduca-term-btn:hover{
-        background:#efefef;
+        background:rgba(255,255,255,.92);
+      }
+
+      #${CONFIG.panelId} button.sigeduca-term-btn:active{
+        transform:scale(.98);
       }
 
       #${CONFIG.panelId} button.sigeduca-term-settings{
-        margin-top:6px;
+        display:block;
+        width:100%;
+        margin-top:8px;
+        padding:7px 2px 0;
         border:none;
+        border-top:1px solid rgba(0,0,0,.08);
         background:transparent;
-        color:#555;
-        text-decoration:underline;
-        font-size:12px;
+        color:var(--sigeduca-muted);
+        text-align:left;
+        font-size:11px;
         cursor:pointer;
-        padding:3px 0;
+      }
+
+      #${CONFIG.panelId} button.sigeduca-term-settings:hover{
+        color:var(--sigeduca-blue);
+      }
+
+      #${CONFIG.panelId} .sigeduca-term-footer{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        margin-top:10px;
+        padding-top:8px;
+        border-top:1px solid rgba(0,0,0,.06);
+        font-size:8pt;
+        color:#8a8a8e;
+      }
+
+      #${CONFIG.panelId} .sigeduca-term-footer a{
+        color:#8a8a8e;
+        text-decoration:none;
+      }
+
+      #${CONFIG.panelId} .sigeduca-term-footer a:hover{
+        color:var(--sigeduca-blue);
       }
 
       #${CONFIG.modalId}{
@@ -1112,72 +1166,103 @@
         display:flex;
         align-items:center;
         justify-content:center;
-        background:rgba(0,0,0,.34);
-        font-family:Arial,Helvetica,sans-serif;
+        background:rgba(0,0,0,.4);
+        font-family:var(--sigeduca-font) !important;
+      }
+
+      #${CONFIG.modalId} *{
+        box-sizing:border-box;
+        font-family:inherit !important;
       }
 
       #${CONFIG.modalId} .sigeduca-modal-card{
         width:min(420px,calc(100vw - 30px));
-        padding:18px;
-        border-radius:10px;
-        background:#fff;
-        box-shadow:0 10px 40px rgba(0,0,0,.25);
+        padding:22px;
+        border-radius:20px;
+        background:rgba(255,255,255,.85);
+        border:1px solid rgba(214,214,214,.5);
+        backdrop-filter:blur(20px);
+        -webkit-backdrop-filter:blur(20px);
+        box-shadow:0 12px 40px -6px rgba(0,0,0,.28);
       }
 
       #${CONFIG.modalId} h3{
         margin:0 0 7px;
-        font-size:16px;
+        font-size:17px;
+        font-weight:600;
+        letter-spacing:-.3px;
+        color:var(--sigeduca-navy);
       }
 
       #${CONFIG.modalId} p{
         margin:0 0 13px;
         font-size:13px;
-        line-height:1.4;
+        line-height:1.45;
         color:#555;
       }
 
       #${CONFIG.modalId} label{
         display:block;
         margin:10px 0 5px;
-        font-size:12px;
-        font-weight:700;
+        font-size:11.5px;
+        font-weight:600;
+        color:#293254;
       }
 
       #${CONFIG.modalId} input{
         width:100%;
-        padding:9px 10px;
-        border:1px solid #bbb;
-        border-radius:6px;
-        font:14px Arial,Helvetica,sans-serif;
+        padding:9px 11px;
+        border:1px solid rgba(0,0,0,.15);
+        border-radius:10px;
+        background:rgba(255,255,255,.7);
+        font-size:14px;
+      }
+
+      #${CONFIG.modalId} input:focus{
+        outline:none;
+        border-color:var(--sigeduca-blue);
+        box-shadow:0 0 0 3px rgba(8,125,255,.15);
       }
 
       #${CONFIG.modalId} .sigeduca-modal-actions{
         display:flex;
         gap:8px;
         justify-content:flex-end;
-        margin-top:15px;
+        margin-top:16px;
       }
 
       #${CONFIG.modalId} .sigeduca-modal-actions button{
-        padding:8px 13px;
-        border-radius:6px;
-        border:1px solid #bbb;
-        background:#fff;
+        padding:8px 16px;
+        border-radius:20px;
+        border:1px solid rgba(0,0,0,.12);
+        background:rgba(255,255,255,.6);
+        color:var(--sigeduca-navy);
         cursor:pointer;
-        font:13px Arial,Helvetica,sans-serif;
+        font-size:13px;
+        transition:all .2s ease;
+      }
+
+      #${CONFIG.modalId} .sigeduca-modal-actions button:hover{
+        opacity:.85;
       }
 
       #${CONFIG.modalId} .sigeduca-modal-actions .primary{
-        background:#065195;
+        background:var(--sigeduca-blue);
         color:#fff;
-        border-color:#065195;
+        border-color:var(--sigeduca-blue);
+      }
+
+      #${CONFIG.modalId} .sigeduca-modal-actions .primary:hover{
+        opacity:1;
+        transform:scale(1.02);
       }
 
       #${CONFIG.modalId} .sigeduca-modal-error{
         display:none;
         margin-top:9px;
-        color:#a40000;
+        color:var(--sigeduca-danger);
         font-size:12px;
+        font-weight:600;
       }
     `;
 
@@ -1211,7 +1296,7 @@
       photo.getBoundingClientRect();
 
     const panelWidth =
-      panel.offsetWidth || 190;
+      panel.offsetWidth || 228;
 
     const gap = 9;
 
@@ -1313,6 +1398,15 @@
       >
         Configurar dados da escola
       </button>
+
+      <div class="sigeduca-term-footer">
+        <a
+          href="https://github.com/Jhonatan-Aquino/"
+          target="_blank"
+          rel="noopener"
+        >&lt; Jhonatan Aquino /&gt;</a>
+        <span>v${CONFIG.scriptVersion}</span>
+      </div>
     `;
 
     targetDoc.body.appendChild(
