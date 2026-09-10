@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SIGEDUCA - Emissão de Termos
 // @namespace    http://tampermonkey.net/
-// @version      1.6.1
+// @version      1.6.2
 // @description  Emissão de termos escolares em HTML/A4 a partir dos dados do cadastro do aluno.
 // @match        http://sigeduca.seduc.mt.gov.br/ged/*
 // @match        https://sigeduca.seduc.mt.gov.br/ged/*
@@ -48,7 +48,7 @@
    */
 
   const CONFIG = {
-    scriptVersion: '1.6.1',
+    scriptVersion: '1.6.2',
     versionSeenStorageKey: 'sigeduca_termos_versao_vista',
 
     cookieName: 'sigeduca_termos_config_v1',
@@ -1371,22 +1371,41 @@
       }
 
       #${CONFIG.panelId} .sigeduca-term-handle{
-        width:36px;
-        height:5px;
-        margin:0 auto 10px;
-        border-radius:3px;
-        background:rgba(0,0,0,.15);
+        position:relative;
+        height:19px;
+        margin:-14px -14px 10px;
+        border-radius:20px 20px 0 0;
         cursor:grab;
         touch-action:none;
         transition:background .15s ease;
       }
 
+      #${CONFIG.panelId} .sigeduca-term-handle::after{
+        content:"";
+        position:absolute;
+        left:50%;
+        bottom:5px;
+        width:36px;
+        height:5px;
+        margin-left:-18px;
+        border-radius:3px;
+        background:rgba(0,0,0,.15);
+        transition:background .15s ease;
+      }
+
       #${CONFIG.panelId} .sigeduca-term-handle:hover{
+        background:rgba(0,0,0,.04);
+      }
+
+      #${CONFIG.panelId} .sigeduca-term-handle:hover::after{
         background:rgba(0,0,0,.28);
       }
 
       #${CONFIG.panelId} .sigeduca-term-handle.sigeduca-term-handle-dragging{
         cursor:grabbing;
+      }
+
+      #${CONFIG.panelId} .sigeduca-term-handle.sigeduca-term-handle-dragging::after{
         background:rgba(0,0,0,.35);
       }
 
