@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SIGEDUCA - Emissão de Termos
 // @namespace    http://tampermonkey.net/
-// @version      1.4.1
+// @version      1.5.0
 // @description  Emissão de termos escolares em HTML/A4 a partir dos dados do cadastro do aluno.
 // @match        http://sigeduca.seduc.mt.gov.br/ged/*
 // @match        https://sigeduca.seduc.mt.gov.br/ged/*
@@ -48,7 +48,7 @@
    */
 
   const CONFIG = {
-    scriptVersion: '1.4.1',
+    scriptVersion: '1.5.0',
     versionSeenStorageKey: 'sigeduca_termos_versao_vista',
 
     cookieName: 'sigeduca_termos_config_v1',
@@ -225,6 +225,18 @@
     return match
       ? match[1].trim()
       : text;
+  }
+
+  function extractLeadingCode(value) {
+    const text = normalizeSpace(value);
+
+    const match = text.match(
+      /^\s*(\d+)\s*-\s*/
+    );
+
+    return match
+      ? match[1]
+      : '';
   }
 
   function formatPhone(ddd, number) {
@@ -586,6 +598,45 @@
     };
   }
 
+  function buildSchoolEmail(
+    escolaCodigo
+  ) {
+    return `escola.${escolaCodigo}@edu.mt.gov.br`;
+  }
+
+  async function autoFetchAndSaveSchoolConfig(
+    escolaCodigo
+  ) {
+    if (!escolaCodigo) {
+      throw new Error(
+        'Código da escola não identificado no cabeçalho do SIGEDUCA.'
+      );
+    }
+
+    const info =
+      await fetchSchoolInfoFromGed();
+
+    const value = {
+      enderecoEscola:
+        info.enderecoEscola,
+
+      telefoneEscola:
+        info.telefoneEscola,
+
+      emailEscola:
+        buildSchoolEmail(
+          escolaCodigo
+        )
+    };
+
+    writeCookie(
+      CONFIG.cookieName,
+      value
+    );
+
+    return value;
+  }
+
   // ============================================================
   // LOCALIZAÇÃO DO CADASTRO
   // ============================================================
@@ -932,6 +983,26 @@
     );
   }
 
+  async function resolveCurrentEscolaCodigo(
+    studentDoc
+  ) {
+    try {
+      const headerDoc =
+        await resolveHeaderDocument(
+          studentDoc
+        );
+
+      return extractLeadingCode(
+        textOfAny(
+          headerDoc,
+          CONFIG.headerEscola
+        )
+      );
+    } catch {
+      return '';
+    }
+  }
+
   // ============================================================
   // LEITURA DOS DADOS
   // ============================================================
@@ -969,6 +1040,11 @@
         splitCodeName(
           escolaHeader
         )
+      );
+
+    const escolaCodigo =
+      extractLeadingCode(
+        escolaHeader
       );
 
     const municipio =
@@ -1227,6 +1303,9 @@
 
       escola:
         escola,
+
+      escolaCodigo:
+        escolaCodigo,
 
       municipioCabecalho:
         municipio,
@@ -2446,9 +2525,19 @@
         'click',
         async () => {
           try {
+            const currentStudentDoc =
+              findStudentDocument() ||
+              studentDoc;
+
+            const escolaCodigo =
+              await resolveCurrentEscolaCodigo(
+                currentStudentDoc
+              );
+
             await showSchoolConfigModal(
               hostDoc,
-              true
+              true,
+              escolaCodigo
             );
           } catch (error) {
             console.error(
@@ -2564,7 +2653,8 @@
 
   function showSchoolConfigModal(
     targetDoc,
-    force = false
+    force = false,
+    escolaCodigo = ''
   ) {
     return new Promise(
       (resolve, reject) => {
@@ -2717,12 +2807,23 @@
                 ).value =
                   info.telefoneEscola;
 
+                if (escolaCodigo) {
+                  card.querySelector(
+                    '#sigeducaEmail'
+                  ).value =
+                    buildSchoolEmail(
+                      escolaCodigo
+                    );
+                }
+
                 status.classList.add(
                   'sigeduca-autofetch-ok'
                 );
 
                 status.textContent =
-                  'Endereço e telefone preenchidos automaticamente. Confira antes de salvar.';
+                  escolaCodigo
+                    ? 'Endereço, telefone e e-mail preenchidos automaticamente. Confira antes de salvar.'
+                    : 'Endereço e telefone preenchidos automaticamente. Confira antes de salvar.';
               } catch (error) {
                 console.error(
                   '[SIGEDUCA Termos]',
@@ -3478,16 +3579,40 @@
     if (
       !hasSchoolConfig()
     ) {
-      schoolCfg =
-        await showSchoolConfigModal(
-          hostDoc,
-          false
+      /*
+       * Antes de pedir para o usuário preencher na mão, tenta
+       * buscar e já salvar os dados automaticamente (endereço e
+       * telefone via AJAX do próprio GED, e-mail pelo padrão
+       * escola.<código>@edu.mt.gov.br). Só cai no preenchimento
+       * manual se a busca falhar.
+       */
+      try {
+        schoolCfg =
+          await autoFetchAndSaveSchoolConfig(
+            data.escolaCodigo
+          );
+      } catch (error) {
+        console.warn(
+          '[SIGEDUCA Termos] Busca automática dos dados da escola:',
+          error
         );
 
+        schoolCfg = null;
+      }
+
       if (!schoolCfg) {
-        throw new Error(
-          'Emissão cancelada.'
-        );
+        schoolCfg =
+          await showSchoolConfigModal(
+            hostDoc,
+            false,
+            data.escolaCodigo
+          );
+
+        if (!schoolCfg) {
+          throw new Error(
+            'Emissão cancelada.'
+          );
+        }
       }
     }
 
