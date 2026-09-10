@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SIGEDUCA - Emissão de Termos
 // @namespace    http://tampermonkey.net/
-// @version      1.3.0
+// @version      1.4.0
 // @description  Emissão de termos escolares em HTML/A4 a partir dos dados do cadastro do aluno.
 // @match        http://sigeduca.seduc.mt.gov.br/ged/*
 // @match        https://sigeduca.seduc.mt.gov.br/ged/*
@@ -48,12 +48,14 @@
    */
 
   const CONFIG = {
-    scriptVersion: '1.3.0',
+    scriptVersion: '1.4.0',
     versionSeenStorageKey: 'sigeduca_termos_versao_vista',
 
     cookieName: 'sigeduca_termos_config_v1',
     positionCookieName: 'sigeduca_termos_posicao_v1',
     cookieMaxAge: 60 * 60 * 24 * 365,
+
+    schoolInfoUrl: '/ged/hwgedteladocumento.aspx?0,36',
 
     panelId: 'sigeducaTermosPanel',
     modalId: 'sigeducaTermosModal',
@@ -385,6 +387,149 @@
         cfg.emailEscola
       )
     );
+  }
+
+  // ============================================================
+  // BUSCA AUTOMÁTICA DOS DADOS DA ESCOLA (AJAX DO GED)
+  // ============================================================
+  //
+  // A tela "hwgedteladocumento.aspx" (usada internamente pelo GED
+  // para montar o cabeçalho/rodapé de documentos como o Histórico
+  // Escolar) devolve HTML com endereço e telefone da unidade
+  // escolar já preenchidos pelo próprio sistema. Não há e-mail
+  // nessa resposta, então o campo de e-mail continua manual.
+  //
+  // Como não é possível confirmar, fora do navegador do usuário,
+  // que esse endpoint responde da mesma forma partindo de qualquer
+  // página do GED (aplicações GeneXus costumam depender de estado
+  // de sessão específico da tela de origem), a busca é feita sob
+  // demanda — o usuário aciona um botão no modal e vê na hora se
+  // funcionou — em vez de silenciosamente, sem controle.
+  // ============================================================
+
+  function extractLabeledValue(doc, label) {
+    const strongs =
+      doc.querySelectorAll('strong');
+
+    for (const strong of strongs) {
+      if (
+        normalizeSpace(
+          strong.textContent
+        ) === label
+      ) {
+        return normalizeSpace(
+          strong.nextElementSibling
+            ?.textContent
+        );
+      }
+    }
+
+    return '';
+  }
+
+  async function fetchSchoolInfoFromGed() {
+    const url = new URL(
+      CONFIG.schoolInfoUrl,
+      window.location.origin
+    ).href;
+
+    const response = await fetch(
+      url,
+      {
+        credentials: 'same-origin'
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        'Não foi possível consultar o servidor do SIGEDUCA.'
+      );
+    }
+
+    const html =
+      await response.text();
+
+    const doc = new DOMParser()
+      .parseFromString(
+        html,
+        'text/html'
+      );
+
+    const endereco =
+      extractLabeledValue(
+        doc,
+        'Endereço:'
+      );
+
+    const numero =
+      extractLabeledValue(
+        doc,
+        'Nº:'
+      );
+
+    const cep =
+      extractLabeledValue(
+        doc,
+        'Cep:'
+      );
+
+    const cidade =
+      extractLabeledValue(
+        doc,
+        'Cidade:'
+      );
+
+    const estado =
+      extractLabeledValue(
+        doc,
+        'Estado:'
+      );
+
+    const foneRaw =
+      extractLabeledValue(
+        doc,
+        'Fone:'
+      );
+
+    if (!endereco || !foneRaw) {
+      throw new Error(
+        'Os dados da escola não foram encontrados na resposta do servidor.'
+      );
+    }
+
+    const enderecoPartes = [
+      toTitleCase(endereco),
+      numero
+        ? `nº ${numero}`
+        : '',
+      cidade
+        ? `${toTitleCase(cidade)}${estado ? '/' + estado : ''}`
+        : '',
+      cep
+        ? `CEP ${cep}`
+        : ''
+    ].filter(Boolean);
+
+    const foneMatch =
+      foneRaw.match(
+        /\(?(\d{2,3})\)?\s*(\d{4,9})/
+      );
+
+    const telefoneEscola =
+      foneMatch
+        ? formatPhone(
+            foneMatch[1],
+            foneMatch[2]
+          )
+        : foneRaw;
+
+    return {
+      enderecoEscola:
+        enderecoPartes.join(', '),
+
+      telefoneEscola:
+        telefoneEscola
+    };
   }
 
   // ============================================================
@@ -1346,6 +1491,44 @@
         color:var(--sigeduca-danger);
         font-size:12px;
         font-weight:600;
+      }
+
+      #${CONFIG.modalId} .sigeduca-autofetch-btn{
+        width:100%;
+        padding:9px 12px;
+        margin-bottom:4px;
+        border:1px dashed rgba(8,125,255,.4);
+        border-radius:10px;
+        background:rgba(8,125,255,.06);
+        color:var(--sigeduca-blue);
+        font-size:12.5px;
+        font-weight:600;
+        cursor:pointer;
+        transition:background .2s ease;
+      }
+
+      #${CONFIG.modalId} .sigeduca-autofetch-btn:hover{
+        background:rgba(8,125,255,.12);
+      }
+
+      #${CONFIG.modalId} .sigeduca-autofetch-btn:disabled{
+        opacity:.6;
+        cursor:default;
+      }
+
+      #${CONFIG.modalId} .sigeduca-autofetch-status{
+        min-height:14px;
+        margin:6px 0 4px;
+        font-size:11.5px;
+        line-height:1.4;
+      }
+
+      #${CONFIG.modalId} .sigeduca-autofetch-status.sigeduca-autofetch-ok{
+        color:#1a8f4c;
+      }
+
+      #${CONFIG.modalId} .sigeduca-autofetch-status.sigeduca-autofetch-error{
+        color:var(--sigeduca-danger);
       }
     `;
 
@@ -2358,6 +2541,19 @@
         card.insertAdjacentHTML(
           'beforeend',
           `
+          <button
+            type="button"
+            id="sigeducaAutoFetch"
+            class="sigeduca-autofetch-btn"
+          >
+            🔄 Buscar endereço e telefone automaticamente
+          </button>
+
+          <div
+            class="sigeduca-autofetch-status"
+            id="sigeducaAutoFetchStatus"
+          ></div>
+
           <label for="sigeducaEndereco">
             Endereço da escola
           </label>
@@ -2427,6 +2623,72 @@
           </div>
           `
         );
+
+        card
+          .querySelector(
+            '#sigeducaAutoFetch'
+          )
+          .addEventListener(
+            'click',
+            async (event) => {
+              const button =
+                event.currentTarget;
+
+              const status =
+                card.querySelector(
+                  '#sigeducaAutoFetchStatus'
+                );
+
+              button.disabled = true;
+              button.textContent =
+                'Buscando...';
+
+              status.className =
+                'sigeduca-autofetch-status';
+
+              status.textContent =
+                '';
+
+              try {
+                const info =
+                  await fetchSchoolInfoFromGed();
+
+                card.querySelector(
+                  '#sigeducaEndereco'
+                ).value =
+                  info.enderecoEscola;
+
+                card.querySelector(
+                  '#sigeducaTel'
+                ).value =
+                  info.telefoneEscola;
+
+                status.classList.add(
+                  'sigeduca-autofetch-ok'
+                );
+
+                status.textContent =
+                  'Endereço e telefone preenchidos automaticamente. Confira antes de salvar.';
+              } catch (error) {
+                console.error(
+                  '[SIGEDUCA Termos]',
+                  error
+                );
+
+                status.classList.add(
+                  'sigeduca-autofetch-error'
+                );
+
+                status.textContent =
+                  'Não foi possível buscar automaticamente. Preencha manualmente abaixo.';
+              } finally {
+                button.disabled = false;
+
+                button.textContent =
+                  '🔄 Buscar endereço e telefone automaticamente';
+              }
+            }
+          );
 
         const save = () => {
           const enderecoEscola =
