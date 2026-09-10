@@ -15,38 +15,6 @@
 (() => {
   'use strict';
 
-  /*
-   * ============================================================
-   * SIGEDUCA — EMISSÃO DE TERMOS
-   * ============================================================
-   *
-   * Esta versão:
-   *  - encontra a página do cadastro mesmo dentro de iframe;
-   *  - lê o cabeçalho (escola, município, ano) na página principal
-   *    do GED, fora do iframe da ficha;
-   *  - lê os dados diretamente do SIGEDUCA;
-   *  - posiciona o menu à esquerda da foto do aluno;
-   *  - guarda endereço, telefone e e-mail da escola em cookie;
-   *  - solicita o RG do responsável somente para o termo familiar
-   *    do estudante menor de idade;
-   *  - gera os documentos totalmente em HTML/A4;
-   *  - utiliza a data atual no momento da emissão;
-   *  - os modelos usam marcadores universais (ex.: <<NOME_ALUNO>>)
-   *    em vez de nomes/dados fictícios como placeholder, tornando
-   *    a substituição por campo única e evitando cruzamento entre
-   *    campos semanticamente diferentes que compartilhavam o mesmo
-   *    texto de exemplo.
-   *
-   * Modelos:
-   *  1. Ciência do Tratamento de Dados Pessoais
-   *  2. Uso de Imagem e Voz — Menor
-   *  3. Uso de Imagem e Voz — Maior
-   *  4. Compromisso Familiar — Menor
-   *
-   * O compromisso familiar para maior de idade ainda será incluído
-   * quando o HTML definitivo desse documento estiver pronto.
-   */
-
   const CONFIG = {
     scriptVersion: '1.6.3',
     versionSeenStorageKey: 'sigeduca_termos_versao_vista',
@@ -57,16 +25,6 @@
 
     schoolInfoUrl: '/ged/hwgedteladocumento.aspx?0,36',
 
-    /*
-     * A tela do cabeçalho só devolve os dados da escola já
-     * preenchidos (em vez dos marcadores "#lotlogradouro#" etc. do
-     * modelo) se antes disso a sessão do GED for "aquecida" com o
-     * fluxo de Validação de Histórico para um código de aluno
-     * (GEDALUCOD) válido. Ainda não sabemos ler esse código
-     * diretamente do aluno que está sendo emitido no momento — por
-     * ora fica fixo em um aluno de teste só para validar se o
-     * caminho funciona.
-     */
     validacaoHistoricoUrl:
       '/ged/HWGedValidacaoHistorico.aspx?3,{ALUNO},F,0,HWMGedHistorico',
     testAlunoCode: '971680',
@@ -97,10 +55,6 @@
     retryMs: 700,
     maxRetries: 40
   };
-
-  // ============================================================
-  // UTILIDADES
-  // ============================================================
 
   const $ = (root, selector) =>
     root?.querySelector(selector) || null;
@@ -355,10 +309,6 @@
     return age;
   }
 
-  // ============================================================
-  // COOKIE
-  // ============================================================
-
   function readCookie(name) {
     const prefix = `${name}=`;
 
@@ -415,24 +365,6 @@
     );
   }
 
-  // ============================================================
-  // BUSCA AUTOMÁTICA DOS DADOS DA ESCOLA (AJAX DO GED)
-  // ============================================================
-  //
-  // A tela "hwgedteladocumento.aspx" (usada internamente pelo GED
-  // para montar o cabeçalho/rodapé de documentos como o Histórico
-  // Escolar) devolve HTML com endereço e telefone da unidade
-  // escolar já preenchidos pelo próprio sistema. Não há e-mail
-  // nessa resposta, então o campo de e-mail continua manual.
-  //
-  // Como não é possível confirmar, fora do navegador do usuário,
-  // que esse endpoint responde da mesma forma partindo de qualquer
-  // página do GED (aplicações GeneXus costumam depender de estado
-  // de sessão específico da tela de origem), a busca é feita sob
-  // demanda — o usuário aciona um botão no modal e vê na hora se
-  // funcionou — em vez de silenciosamente, sem controle.
-  // ============================================================
-
   function extractLabeledValue(doc, label) {
     const strongs =
       doc.querySelectorAll('strong');
@@ -462,13 +394,6 @@
   }
 
   async function fetchSchoolInfoFromGed() {
-    /*
-     * Sem esse "aquecimento" prévio, a tela do cabeçalho devolve o
-     * modelo com os marcadores não substituídos (ex.:
-     * "#lotlogradouro#") em vez dos dados reais — o servidor
-     * precisa antes saber, via esse fluxo de Validação de
-     * Histórico, de qual aluno/lotação buscar as informações.
-     */
     const validacaoUrl =
       new URL(
         CONFIG.validacaoHistoricoUrl.replace(
@@ -637,10 +562,6 @@
     return value;
   }
 
-  // ============================================================
-  // LOCALIZAÇÃO DO CADASTRO
-  // ============================================================
-
   function findStudentDocument(root = document) {
     if (
       $(root, `#${CONFIG.anchorId}`)
@@ -667,16 +588,11 @@
           return found;
         }
       } catch {
-        // iframe cross-origin
       }
     }
 
     return null;
   }
-
-  // ============================================================
-  // CABEÇALHO (página principal, fora da ficha)
-  // ============================================================
 
   let cachedHeaderDoc = null;
 
@@ -716,13 +632,11 @@
       try {
         enqueue(win.parent);
       } catch {
-        // cross-origin
       }
 
       try {
         enqueue(win.top);
       } catch {
-        // cross-origin
       }
 
       try {
@@ -736,11 +650,9 @@
           try {
             enqueue(frames[i]);
           } catch {
-            // cross-origin
           }
         }
       } catch {
-        // frames inacessíveis
       }
     }
 
@@ -772,13 +684,11 @@
     try {
       addWin(window.parent);
     } catch {
-      // cross-origin
     }
 
     try {
       addWin(window.top);
     } catch {
-      // cross-origin
     }
 
     for (const startWin of startWins) {
@@ -804,7 +714,6 @@
         return window.top.document;
       }
     } catch {
-      // top cross-origin
     }
 
     try {
@@ -816,7 +725,6 @@
           .parent.document;
       }
     } catch {
-      // parent cross-origin
     }
 
     return fromDoc || document;
@@ -934,7 +842,6 @@
               return;
             }
           } catch {
-            // ainda não acessível
           }
 
           if (tries >= 25) {
@@ -1003,10 +910,6 @@
     }
   }
 
-  // ============================================================
-  // LEITURA DOS DADOS
-  // ============================================================
-
   function getStudentData(doc, headerDoc) {
     if (!doc) {
       return null;
@@ -1018,10 +921,6 @@
         ? headerDoc
         : findHeaderDocument(doc) ||
           doc;
-
-    // ----------------------------------------------------------
-    // CABEÇALHO
-    // ----------------------------------------------------------
 
     const escolaHeader =
       textOfAny(
@@ -1063,10 +962,6 @@
         new Date().getFullYear()
       );
 
-    // ----------------------------------------------------------
-    // IDENTIFICAÇÃO
-    // ----------------------------------------------------------
-
     const nome =
       textOf(
         doc,
@@ -1093,10 +988,6 @@
         )
       );
 
-    // ----------------------------------------------------------
-    // FILIAÇÃO
-    // ----------------------------------------------------------
-
     const filiacao1 =
       textOf(
         doc,
@@ -1108,10 +999,6 @@
         doc,
         '#CTLGERPESNOMPAI'
       );
-
-    // ----------------------------------------------------------
-    // RESPONSÁVEL 1
-    // ----------------------------------------------------------
 
     const responsavel =
       textOf(
@@ -1126,10 +1013,6 @@
           '#CTLGERPESRESPCPF'
         )
       );
-
-    // ----------------------------------------------------------
-    // ENDEREÇO
-    // ----------------------------------------------------------
 
     const endereco =
       textOf(
@@ -1188,10 +1071,6 @@
       bairro
     ].filter(Boolean);
 
-    // ----------------------------------------------------------
-    // TELEFONES DO RESPONSÁVEL
-    // ----------------------------------------------------------
-
     const celular =
       formatPhone(
         textOf(
@@ -1238,10 +1117,6 @@
         (value, index, arr) =>
           arr.indexOf(value) === index
       );
-
-    // ----------------------------------------------------------
-    // E-MAIL DO RESPONSÁVEL
-    // ----------------------------------------------------------
 
     const emailResponsavel =
       textOf(
@@ -1314,10 +1189,6 @@
         anoLetivo
     };
   }
-
-  // ============================================================
-  // CSS DA INTERFACE
-  // ============================================================
 
   function injectBaseCSS(targetDoc) {
     if (
@@ -1684,10 +1555,6 @@
     );
   }
 
-  // ============================================================
-  // POSICIONAMENTO
-  // ============================================================
-
   let panelDragged = false;
   let panelDragPosition = null;
 
@@ -1954,7 +1821,6 @@
             event.pointerId
           );
         } catch {
-          // captura indisponível
         }
 
         handle.classList.add(
@@ -2029,7 +1895,6 @@
               endEvent.pointerId
             );
           } catch {
-            // captura já perdida/indisponível
           }
         };
 
@@ -2038,15 +1903,6 @@
           onMove
         );
 
-        /*
-         * Em páginas com iframes/postbacks (como o SIGEDUCA), a
-         * captura do ponteiro pode ser perdida sem que um
-         * "pointerup" limpo chegue a disparar. Sem essa rede de
-         * segurança, o listener de "pointermove" ficava vazando e
-         * reagia a qualquer passada do mouse sobre o handle usando
-         * as coordenadas do arraste anterior — causando o "piscar"
-         * ao pairar sobre a posição antiga.
-         */
         handle.addEventListener(
           'pointerup',
           endDrag,
@@ -2114,12 +1970,6 @@
       panelDragPosition
     );
 
-    /*
-     * Desliza o painel (ainda no seu formato normal) para fora da
-     * tela pela direita e só troca para a aba compacta quando ele
-     * já estiver fora de vista — assim a mudança de tamanho não
-     * "pisca", ela acontece enquanto está invisível.
-     */
     const offscreenLeft =
       hostDoc.defaultView
         .innerWidth + 40;
@@ -2159,11 +2009,6 @@
     const offscreenLeft =
       win.innerWidth + 40;
 
-    /*
-     * Troca para o formato normal (ainda fora da tela) e só então
-     * ativa a transição para deslizar de volta até a posição
-     * anterior — o mesmo truque do fechar, em ordem inversa.
-     */
     panel.classList.remove(
       'sigeduca-term-collapsed'
     );
@@ -2209,10 +2054,6 @@
       `#${CONFIG.panelId}`
     )?.remove();
   }
-
-  // ============================================================
-  // EFEITO DE VERSÃO (NOVO / ATUALIZADO)
-  // ============================================================
 
   let versionGlowTriggered = false;
 
@@ -2331,7 +2172,6 @@
           CONFIG.versionSeenStorageKey
         );
     } catch {
-      // localStorage indisponível (ex.: modo privado)
     }
 
     if (
@@ -2378,7 +2218,6 @@
                 CONFIG.scriptVersion
               );
             } catch {
-              // localStorage indisponível
             }
           },
           duration
@@ -2387,10 +2226,6 @@
       delay
     );
   }
-
-  // ============================================================
-  // PAINEL
-  // ============================================================
 
   function createPanel(
     studentDoc,
@@ -2498,14 +2333,6 @@
             const termId =
               btn.dataset.term;
 
-            /*
-             * Busca o documento do aluno na hora do clique, em vez
-             * de usar a referência capturada quando o painel foi
-             * criado: se o usuário fechou a ficha e pesquisou outro
-             * aluno (o iframe navegou para uma página nova), aquela
-             * referência antiga continua "viva" na memória com os
-             * dados do aluno anterior, mesmo sem estar mais na tela.
-             */
             const currentStudentDoc =
               findStudentDocument() ||
               studentDoc;
@@ -2600,10 +2427,6 @@
 
     return panel;
   }
-
-  // ============================================================
-  // MODAIS
-  // ============================================================
 
   function closeModal(targetDoc) {
     $(
@@ -3051,10 +2874,6 @@
     );
   }
 
-  // ============================================================
-  // SUBSTITUIÇÃO DE DADOS
-  // ============================================================
-
   function replaceAllSafe(
     html,
     search,
@@ -3080,10 +2899,6 @@
         replacement
       );
   }
-
-  // ============================================================
-  // TERMO — DADOS PESSOAIS
-  // ============================================================
 
   function buildDataTerm(
     data,
@@ -3148,10 +2963,6 @@
     return html;
   }
 
-  // ============================================================
-  // TERMO — IMAGEM MENOR
-  // ============================================================
-
   function buildImageMinorTerm(
     data
   ) {
@@ -3195,10 +3006,6 @@
     return html;
   }
 
-  // ============================================================
-  // TERMO — IMAGEM MAIOR
-  // ============================================================
-
   function buildImageMajorTerm(
     data
   ) {
@@ -3234,10 +3041,6 @@
 
     return html;
   }
-
-  // ============================================================
-  // TERMO — COMPROMISSO FAMILIAR MENOR
-  // ============================================================
 
   function buildFamilyMinorTerm(
     data,
@@ -3357,10 +3160,6 @@
     return html;
   }
 
-  // ============================================================
-  // TERMO — AUTORIZAÇÃO DE MATRÍCULA/TRANSFERÊNCIA
-  // ============================================================
-
   function buildAuthMatriculaTerm(
     data
   ) {
@@ -3429,18 +3228,10 @@
     return html;
   }
 
-  // ============================================================
-  // IMPRESSÃO
-  // ============================================================
-
   function openPrintDocument(
     html,
     title
   ) {
-    /*
-     * Sem "noopener,noreferrer", pois precisamos manter
-     * a referência para a nova janela.
-     */
     const printWindow =
       window.open(
         '',
@@ -3500,10 +3291,6 @@
     }
   }
 
-  // ============================================================
-  // EMISSÃO
-  // ============================================================
-
   async function emitTerm(
     studentDoc,
     hostDoc,
@@ -3553,23 +3340,12 @@
       );
     }
 
-    // ----------------------------------------------------------
-    // DADOS DA ESCOLA
-    // ----------------------------------------------------------
-
     let schoolCfg =
       getSchoolConfig();
 
     if (
       !hasSchoolConfig()
     ) {
-      /*
-       * Antes de pedir para o usuário preencher na mão, tenta
-       * buscar e já salvar os dados automaticamente (endereço e
-       * telefone via AJAX do próprio GED, e-mail pelo padrão
-       * escola.<código>@edu.mt.gov.br). Só cai no preenchimento
-       * manual se a busca falhar.
-       */
       try {
         schoolCfg =
           await autoFetchAndSaveSchoolConfig(
@@ -3601,10 +3377,6 @@
     }
 
     let html;
-
-    // ----------------------------------------------------------
-    // ESCOLHA DO MODELO
-    // ----------------------------------------------------------
 
     switch (termId) {
 
@@ -3729,10 +3501,6 @@
         );
     }
 
-    // ----------------------------------------------------------
-    // TÍTULOS
-    // ----------------------------------------------------------
-
     const titleMap = {
       data:
         'Termo de Ciência do Tratamento de Dados Pessoais',
@@ -3756,29 +3524,11 @@
     );
   }
 
-  // ============================================================
-  // INICIALIZAÇÃO
-  // ============================================================
-
   let attempts = 0;
   let installedDoc = null;
   let installedHostDoc = null;
   let isHostOwner = false;
 
-  /*
-   * O SIGEDUCA carrega a ficha do aluno dentro de um iframe cuja
-   * URL também bate com o @match do script — então, sem @noframes,
-   * o Tampermonkey injeta uma segunda instância inteira dentro
-   * desse iframe. As duas instâncias resolvem o mesmo documento
-   * "hospedeiro" (topo da página) para montar o painel, mas cada
-   * uma mantém seu próprio estado de posição em memória: sempre que
-   * o intervalo de recheque de uma instância "perdedora" disparava,
-   * ele reaplicava a posição antiga que só ela conhecia, brigando
-   * com a instância "dona" a cada ~2,5s — o vaivém constante e
-   * independente do mouse. @noframes evita a duplicidade na
-   * origem; esta trava é uma segunda camada de segurança para o
-   * caso de outro cenário produzir instâncias concorrentes.
-   */
   function claimHostOwnership(hostDoc) {
     const win = hostDoc.defaultView;
 
@@ -3811,13 +3561,6 @@
       return;
     }
 
-    /*
-     * O painel é montado no documento "hospedeiro" (o topo
-     * acessível da árvore de frames), não no documento do
-     * cadastro em si — assim ele não fica preso dentro do
-     * iframe da ficha, podendo ser arrastado para qualquer
-     * canto da janela.
-     */
     const hostDoc =
       resolveHostDocument(
         studentDoc
@@ -3925,10 +3668,6 @@
 
   install();
 
-  // ------------------------------------------------------------
-  // RECHECAGEM
-  // ------------------------------------------------------------
-
   setInterval(
     () => {
       if (!isHostOwner) {
@@ -3966,14 +3705,6 @@
     },
     2500
   );
-
-  // ============================================================
-  // MODELOS HTML
-  // ============================================================
-  //
-  // Os modelos definitivos ficam aqui.
-  //
-  // ============================================================
 
   const TEMPLATES = {
     data: `<!DOCTYPE html>
@@ -4418,10 +4149,6 @@ Este termo deve ser preenchido, assinado e entregue na secretaria da unidade esc
 </body>
 </html>`,
 
-    // ========================================================
-    // IMAGEM MENOR
-    // ========================================================
-
     imgMinor: `<!DOCTYPE html>
 <html lang="pt-BR">
 
@@ -4729,10 +4456,6 @@ Assinatura
 
 </html>`,
 
-    // ========================================================
-    // IMAGEM MAIOR
-    // ========================================================
-
     imgMajor: `<!DOCTYPE html>
 <html lang="pt-BR">
 
@@ -5038,10 +4761,6 @@ Assinatura
 </body>
 
 </html>`,
-
-    // ========================================================
-    // COMPROMISSO FAMILIAR — MENOR
-    // ========================================================
 
     familyMinor: `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -5557,10 +5276,6 @@ Assinatura do(a) Responsável Legal
 </body>
 
 </html>`,
-
-    // ========================================================
-    // AUTORIZAÇÃO DE MATRÍCULA/TRANSFERÊNCIA
-    // ========================================================
 
     authMatricula: `<!DOCTYPE html>
 <html lang="pt-BR">
