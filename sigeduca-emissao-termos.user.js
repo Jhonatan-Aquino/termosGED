@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SIGEDUCA - Emissão de Termos
 // @namespace    http://tampermonkey.net/
-// @version      1.0.9
+// @version      1.1.0
 // @description  Emissão de termos escolares em HTML/A4 a partir dos dados do cadastro do aluno.
 // @match        http://sigeduca.seduc.mt.gov.br/ged/*
 // @match        https://sigeduca.seduc.mt.gov.br/ged/*
@@ -47,7 +47,7 @@
    */
 
   const CONFIG = {
-    scriptVersion: '1.0.9',
+    scriptVersion: '1.1.0',
     versionSeenStorageKey: 'sigeduca_termos_versao_vista',
 
     cookieName: 'sigeduca_termos_config_v1',
@@ -824,6 +824,14 @@
         '#CTLGERPESDTANASC'
       );
 
+    const cpfAluno =
+      formatCpf(
+        textOf(
+          doc,
+          '#CTLGERPESCPF'
+        )
+      );
+
     // ----------------------------------------------------------
     // FILIAÇÃO
     // ----------------------------------------------------------
@@ -993,6 +1001,9 @@
 
       dataNascimento:
         dataNascimento,
+
+      cpfAluno:
+        cpfAluno,
 
       idade:
         calculateAge(
@@ -1560,6 +1571,13 @@
         data-term="familyMinor"
       >
         Compromisso Familiar — Menor
+      </button>
+
+      <button
+        class="sigeduca-term-btn"
+        data-term="authMatricula"
+      >
+        Autorização de Matrícula/Transferência
       </button>
 
       <button
@@ -2301,6 +2319,84 @@
   }
 
   // ============================================================
+  // TERMO — AUTORIZAÇÃO DE MATRÍCULA/TRANSFERÊNCIA
+  // ============================================================
+
+  function buildAuthMatriculaTerm(
+    data,
+    responsibleRG
+  ) {
+    let html =
+      TEMPLATES.authMatricula;
+
+    html =
+      replaceAllSafe(
+        html,
+        '<<ESCOLA_NOME>>',
+        data.escola
+      );
+
+    html =
+      replaceAllSafe(
+        html,
+        '<<NOME_RESPONSAVEL>>',
+        data.responsavel
+      );
+
+    html =
+      replaceAllSafe(
+        html,
+        '<<TELEFONES_RESPONSAVEL>>',
+        data.telefonesResponsavel.join(' / ') ||
+        '[TELEFONE DO RESPONSÁVEL]'
+      );
+
+    html =
+      replaceAllSafe(
+        html,
+        '<<CPF_RESPONSAVEL>>',
+        data.cpfResponsavel ||
+        '[CPF DO RESPONSÁVEL]'
+      );
+
+    html =
+      replaceAllSafe(
+        html,
+        '<<RG_RESPONSAVEL>>',
+        responsibleRG ||
+        data.cpfResponsavel ||
+        '[RG DO RESPONSÁVEL]'
+      );
+
+    html =
+      replaceAllSafe(
+        html,
+        '<<NOME_ALUNO>>',
+        data.aluno
+      );
+
+    html =
+      replaceAllSafe(
+        html,
+        '<<CPF_ALUNO>>',
+        data.cpfAluno ||
+        '[CPF DO ALUNO]'
+      );
+
+    const todayText =
+      currentDateWritten();
+
+    html =
+      replaceAllSafe(
+        html,
+        '<<LOCAL_E_DATA>>',
+        `${data.municipioCabecalho || data.municipio} - MT, ${todayText}.`
+      );
+
+    return html;
+  }
+
+  // ============================================================
   // IMPRESSÃO
   // ============================================================
 
@@ -2546,6 +2642,29 @@
         break;
       }
 
+      case 'authMatricula': {
+
+        if (!data.responsavel) {
+          throw new Error(
+            'O nome do Responsável 1 não está preenchido no cadastro.'
+          );
+        }
+
+        const rgAuth =
+          await showResponsibleRGModal(
+            targetDoc,
+            data.responsavel
+          );
+
+        html =
+          buildAuthMatriculaTerm(
+            data,
+            rgAuth
+          );
+
+        break;
+      }
+
       default:
 
         throw new Error(
@@ -2568,7 +2687,10 @@
         'Termo de Ciência para Uso de Imagem e Voz — Maior',
 
       familyMinor:
-        'Termo de Compromisso Familiar — Menor'
+        'Termo de Compromisso Familiar — Menor',
+
+      authMatricula:
+        'Autorização para Matrícula e Retirada de Transferência/Histórico Escolar'
     };
 
     openPrintDocument(
@@ -4257,6 +4379,288 @@ Assinatura do(a) Responsável Legal
 </div>
 
 </div>
+
+</div>
+
+</section>
+
+</main>
+
+</body>
+
+</html>`,
+
+    // ========================================================
+    // AUTORIZAÇÃO DE MATRÍCULA/TRANSFERÊNCIA
+    // ========================================================
+
+    authMatricula: `<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0"
+>
+
+<title>
+Autorização para Matrícula e Retirada de Transferência/Histórico Escolar
+</title>
+
+<style>
+
+:root{
+  --pw:210mm;
+  --ph:297mm;
+
+  --mt:14mm;
+  --mr:20mm;
+  --mb:14mm;
+  --ml:20mm;
+
+  --font:"Times New Roman",Times,serif;
+}
+
+*{
+  box-sizing:border-box;
+}
+
+html,
+body{
+  margin:0;
+  padding:0;
+
+  background:#e9e9e9;
+  color:#000;
+
+  font-family:var(--font);
+}
+
+.document{
+  width:var(--pw);
+  margin:12mm auto;
+}
+
+.page{
+  position:relative;
+
+  width:var(--pw);
+  height:var(--ph);
+
+  padding:
+    var(--mt)
+    var(--mr)
+    var(--mb)
+    var(--ml);
+
+  background:#fff;
+
+  overflow:hidden;
+}
+
+.header{
+  width:100%;
+  text-align:center;
+  margin:0 0 9mm;
+}
+
+.logo{
+  display:block;
+  width:60mm;
+  height:auto;
+
+  margin:
+    1.5mm
+    auto
+    4mm;
+
+  object-fit:contain;
+}
+
+.escola-nome{
+  font-size:11.5pt;
+  font-weight:700;
+  letter-spacing:.2px;
+}
+
+.title{
+  margin:0 0 12mm;
+
+  font-size:13pt;
+  line-height:1.35;
+  font-weight:bold;
+
+  text-align:center;
+  text-transform:uppercase;
+}
+
+.body{
+  font-size:12pt;
+  line-height:1.9;
+
+  text-align:justify;
+}
+
+.body p{
+  margin:0;
+  text-indent:10mm;
+}
+
+.blank-inline{
+  display:inline-block;
+  border-bottom:.25mm solid #000;
+  vertical-align:baseline;
+  margin:0 1mm;
+}
+
+.blank-inline.blank-name{
+  width:68mm;
+}
+
+.blank-inline.blank-nationality{
+  width:34mm;
+}
+
+.blank-inline.blank-cpf{
+  width:42mm;
+}
+
+.date-line{
+  margin-top:14mm;
+
+  text-align:center;
+  font-size:12pt;
+}
+
+.signature{
+  margin-top:22mm;
+
+  text-align:center;
+}
+
+.signature-line{
+  display:inline-block;
+
+  width:80mm;
+
+  border-bottom:.25mm solid #000;
+
+  height:5mm;
+}
+
+.signature-name{
+  display:block;
+  margin-top:2.5mm;
+
+  font-size:12pt;
+  font-weight:700;
+}
+
+.signature-caption{
+  display:block;
+  margin-top:1mm;
+
+  font-size:10.5pt;
+  font-weight:400;
+}
+
+@page{
+  size:A4 portrait;
+  margin:0;
+}
+
+@media print{
+
+  html,
+  body{
+    background:#fff;
+  }
+
+  .document{
+    width:auto;
+    margin:0;
+  }
+
+  .page{
+    width:210mm;
+    height:297mm;
+
+    margin:0;
+
+    padding:
+      var(--mt)
+      var(--mr)
+      var(--mb)
+      var(--ml);
+
+    box-shadow:none;
+
+    overflow:hidden;
+  }
+}
+
+@media screen{
+
+  .page{
+    box-shadow:
+      0 1px 8px rgba(0,0,0,.14);
+  }
+}
+
+</style>
+</head>
+
+<body>
+
+<main class="document">
+
+<section class="page">
+
+<header class="header">
+
+<img
+  class="logo"
+  src="https://drive.google.com/thumbnail?id=1Cr4xEqLYkIIfyTlUygYJitMPNQfKrO1k&sz=w1000"
+  alt="SEDUC - Governo de Mato Grosso"
+>
+
+<div class="escola-nome">
+<<ESCOLA_NOME>>
+</div>
+
+</header>
+
+<h1 class="title">
+Autorização para Matrícula e Retirada de<br>
+Transferência/Histórico Escolar
+</h1>
+
+<div class="body">
+
+<p>
+Eu, <strong><<NOME_RESPONSAVEL>></strong>, de nacionalidade brasileira, portador(a) do telefone <<TELEFONES_RESPONSAVEL>>, inscrito(a) no CPF sob o nº <<CPF_RESPONSAVEL>> e no RG nº <<RG_RESPONSAVEL>>, venho, por meio deste documento, autorizar o(a) senhor(a) <span class="blank-inline blank-name"></span>, de nacionalidade <span class="blank-inline blank-nationality"></span>, portador(a) do CPF nº <span class="blank-inline blank-cpf"></span>, a efetuar matrícula e a solicitar ou retirar transferência, histórico escolar e demais documentos referentes à matrícula do(a) aluno(a) <strong><<NOME_ALUNO>></strong>, de nacionalidade brasileira, portador(a) do CPF nº <<CPF_ALUNO>>.
+</p>
+
+</div>
+
+<p class="date-line">
+<<LOCAL_E_DATA>>
+</p>
+
+<div class="signature">
+
+<div class="signature-line"></div>
+
+<span class="signature-name">
+<<NOME_RESPONSAVEL>>
+</span>
+
+<span class="signature-caption">
+Assinatura conforme RG
+</span>
 
 </div>
 
