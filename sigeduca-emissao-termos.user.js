@@ -5692,9 +5692,11 @@ body{
   color:#000;
 
   font-family:
-    "Times New Roman",
-    Times,
-    serif;
+    "SF Pro Text",
+    "Helvetica Neue",
+    Helvetica,
+    Arial,
+    sans-serif;
 }
 
 .document{
@@ -5733,7 +5735,7 @@ body{
 }
 
 .header-spacer{
-  width:20mm;
+  width:23mm;
   flex:0 0 auto;
 }
 
@@ -5744,16 +5746,16 @@ body{
 }
 
 .header-anexo{
-  font-size:10pt;
+  font-size:11pt;
   font-weight:700;
 
-  margin-bottom:4mm;
+  margin-bottom:5mm;
 }
 
 .header-institution{
-  font-size:11pt;
+  font-size:12pt;
   font-weight:700;
-  line-height:1.35;
+  line-height:1.6;
 
   text-transform:uppercase;
 }
@@ -5761,16 +5763,16 @@ body{
 .header-brasao{
   display:block;
 
-  width:20mm;
+  width:23mm;
   height:auto;
 
   flex:0 0 auto;
 }
 
 .body{
-  font-size:11pt;
+  font-size:12.5pt;
 
-  line-height:1.3;
+  line-height:1.75;
 
   text-align:justify;
 }
@@ -5778,7 +5780,7 @@ body{
 .doc-title{
   margin-bottom:9mm;
 
-  font-size:12pt;
+  font-size:13.5pt;
   font-weight:700;
 
   text-align:center;
@@ -5788,7 +5790,7 @@ body{
   margin:
     0
     0
-    5.6mm;
+    6.5mm;
 
   text-indent:8mm;
 
@@ -5834,7 +5836,7 @@ body{
 .final-signature-label{
   margin-top:2mm;
 
-  font-size:10.8pt;
+  font-size:12pt;
 }
 
 @media print{
