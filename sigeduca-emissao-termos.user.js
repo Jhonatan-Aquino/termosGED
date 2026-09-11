@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SIGEDUCA - Emissão de Termos
 // @namespace    http://tampermonkey.net/
-// @version      1.6.4
+// @version      1.7.0
 // @description  Emissão de termos escolares em HTML/A4 a partir dos dados do cadastro do aluno.
 // @match        http://sigeduca.seduc.mt.gov.br/ged/*
 // @match        https://sigeduca.seduc.mt.gov.br/ged/*
@@ -16,7 +16,7 @@
   'use strict';
 
   const CONFIG = {
-    scriptVersion: '1.6.4',
+    scriptVersion: '1.7.0',
     versionSeenStorageKey: 'sigeduca_termos_versao_vista',
 
     cookieName: 'sigeduca_termos_config_v1',
@@ -1210,7 +1210,7 @@
     style.textContent = `
       #${CONFIG.panelId}, #${CONFIG.modalId} {
         --sigeduca-font: "SF Pro Text", "SF Pro Icons", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
-        --sigeduca-blue: #087dff;
+        --sigeduca-blue: #3982f7;
         --sigeduca-navy: #1d1d1f;
         --sigeduca-muted: #666;
         --sigeduca-danger: #ff3b30;
@@ -1221,12 +1221,12 @@
         z-index:2147483000;
         width:228px;
         padding:14px 14px 12px;
-        background:rgba(237,237,237,.78);
+        background:rgba(237,237,237,.75);
         border:1px solid rgba(214,214,214,.5);
         border-radius:20px;
         box-shadow:0 8px 32px -4px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.06);
-        backdrop-filter:blur(14px);
-        -webkit-backdrop-filter:blur(14px);
+        backdrop-filter:blur(12px);
+        -webkit-backdrop-filter:blur(12px);
         font-family:var(--sigeduca-font) !important;
         color:var(--sigeduca-navy);
       }
@@ -1359,16 +1359,12 @@
         font-size:12.5px;
         font-weight:500;
         cursor:pointer;
-        transition:background .25s ease, transform .15s ease;
+        transition:all .2s ease-in-out;
       }
 
       #${CONFIG.panelId} button.sigeduca-term-btn:hover{
-        background:linear-gradient(
-          135deg,
-          rgba(8,125,255,.16) 0%,
-          rgba(112,142,178,.14) 55%,
-          rgba(233,240,250,.6) 100%
-        );
+        background:rgba(57,130,247,.16);
+        transform:scale(1.02);
       }
 
       #${CONFIG.panelId} button.sigeduca-term-btn:active{
@@ -1467,7 +1463,7 @@
       #${CONFIG.modalId} input:focus{
         outline:none;
         border-color:var(--sigeduca-blue);
-        box-shadow:0 0 0 3px rgba(8,125,255,.15);
+        box-shadow:0 0 0 3px rgba(57,130,247,.15);
       }
 
       #${CONFIG.modalId} .sigeduca-modal-actions{
@@ -1515,9 +1511,9 @@
         width:100%;
         padding:9px 12px;
         margin-bottom:4px;
-        border:1px dashed rgba(8,125,255,.4);
+        border:1px dashed rgba(57,130,247,.4);
         border-radius:10px;
-        background:rgba(8,125,255,.06);
+        background:rgba(57,130,247,.06);
         color:var(--sigeduca-blue);
         font-size:12.5px;
         font-weight:600;
@@ -1526,7 +1522,7 @@
       }
 
       #${CONFIG.modalId} .sigeduca-autofetch-btn:hover{
-        background:rgba(8,125,255,.12);
+        background:rgba(57,130,247,.12);
       }
 
       #${CONFIG.modalId} .sigeduca-autofetch-btn:disabled{
@@ -2087,11 +2083,11 @@
       .sigeduca-glow-layer.sigeduca-glow-before{
         background:conic-gradient(
           from 0deg,
-          rgba(8,125,255,.45),
+          rgba(57,130,247,.45),
           transparent,
           rgba(52,199,89,.4),
           transparent,
-          rgba(8,125,255,.5)
+          rgba(57,130,247,.5)
         );
         filter:blur(26px);
         animation:sigeduca-glow-reverse 2000ms ease-out;
@@ -2101,7 +2097,7 @@
         background:conic-gradient(
           from 0deg,
           rgba(52,199,89,.5),
-          rgba(8,125,255,.6),
+          rgba(57,130,247,.6),
           transparent,
           rgba(255,255,255,.75),
           rgba(52,199,89,.5)
