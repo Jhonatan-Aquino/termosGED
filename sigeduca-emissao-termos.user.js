@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SIGEDUCA - Emissão de Termos
 // @namespace    http://tampermonkey.net/
-// @version      1.8.2
+// @version      1.9.0
 // @description  Emissão de termos escolares em HTML/A4 a partir dos dados do cadastro do aluno.
 // @match        http://sigeduca.seduc.mt.gov.br/ged/*
 // @match        https://sigeduca.seduc.mt.gov.br/ged/*
@@ -16,7 +16,7 @@
   'use strict';
 
   const CONFIG = {
-    scriptVersion: '1.8.2',
+    scriptVersion: '1.9.0',
     versionSeenStorageKey: 'sigeduca_termos_versao_vista',
 
     cookieName: 'sigeduca_termos_config_v1',
@@ -888,26 +888,6 @@
     return loadHeaderFromHiddenIframe(
       fromDoc
     );
-  }
-
-  async function resolveCurrentEscolaCodigo(
-    studentDoc
-  ) {
-    try {
-      const headerDoc =
-        await resolveHeaderDocument(
-          studentDoc
-        );
-
-      return extractLeadingCode(
-        textOfAny(
-          headerDoc,
-          CONFIG.headerEscola
-        )
-      );
-    } catch {
-      return '';
-    }
   }
 
   function getStudentData(doc, headerDoc) {
@@ -2373,15 +2353,28 @@
               findStudentDocument() ||
               studentDoc;
 
-            const escolaCodigo =
-              await resolveCurrentEscolaCodigo(
-                currentStudentDoc
+            let headerDoc = null;
+
+            try {
+              headerDoc =
+                await resolveHeaderDocument(
+                  currentStudentDoc
+                );
+            } catch {
+              headerDoc = null;
+            }
+
+            const currentData =
+              getStudentData(
+                currentStudentDoc,
+                headerDoc
               );
 
             await showSchoolConfigModal(
               hostDoc,
               true,
-              escolaCodigo
+              currentData?.escolaCodigo || '',
+              currentData?.escola || ''
             );
           } catch (error) {
             console.error(
@@ -2494,7 +2487,8 @@
   function showSchoolConfigModal(
     targetDoc,
     force = false,
-    escolaCodigo = ''
+    escolaCodigo = '',
+    defaultEscolaName = ''
   ) {
     return new Promise(
       (resolve, reject) => {
@@ -2537,6 +2531,21 @@
             class="sigeduca-autofetch-status"
             id="sigeducaAutoFetchStatus"
           ></div>
+
+          <label for="sigeducaNomeEscola">
+            Nome da escola
+          </label>
+
+          <input
+            id="sigeducaNomeEscola"
+            type="text"
+            autocomplete="off"
+            value="${escapeHtml(
+              current.nomeEscola ||
+              defaultEscolaName ||
+              ''
+            )}"
+          >
 
           <label for="sigeducaEndereco">
             Endereço da escola
@@ -2686,6 +2695,15 @@
           );
 
         const save = () => {
+          const nomeEscola =
+            normalizeSpace(
+              card
+                .querySelector(
+                  '#sigeducaNomeEscola'
+                )
+                ?.value
+            );
+
           const enderecoEscola =
             normalizeSpace(
               card
@@ -2729,6 +2747,7 @@
           }
 
           const value = {
+            nomeEscola,
             enderecoEscola,
             telefoneEscola,
             emailEscola
@@ -3439,7 +3458,8 @@
           await showSchoolConfigModal(
             hostDoc,
             false,
-            data.escolaCodigo
+            data.escolaCodigo,
+            data.escola
           );
 
         if (!schoolCfg) {
@@ -3448,6 +3468,10 @@
           );
         }
       }
+    }
+
+    if (schoolCfg.nomeEscola) {
+      data.escola = schoolCfg.nomeEscola;
     }
 
     let html;
