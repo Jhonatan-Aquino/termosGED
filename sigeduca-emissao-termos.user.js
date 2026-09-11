@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SIGEDUCA - Emissão de Termos
 // @namespace    http://tampermonkey.net/
-// @version      1.7.0
+// @version      1.8.0
 // @description  Emissão de termos escolares em HTML/A4 a partir dos dados do cadastro do aluno.
 // @match        http://sigeduca.seduc.mt.gov.br/ged/*
 // @match        https://sigeduca.seduc.mt.gov.br/ged/*
@@ -16,7 +16,7 @@
   'use strict';
 
   const CONFIG = {
-    scriptVersion: '1.7.0',
+    scriptVersion: '1.8.0',
     versionSeenStorageKey: 'sigeduca_termos_versao_vista',
 
     cookieName: 'sigeduca_termos_config_v1',
@@ -2295,6 +2295,13 @@
       </button>
 
       <button
+        class="sigeduca-term-btn"
+        data-term="cienciaMilitar"
+      >
+        Ciência e Concordância — Militar
+      </button>
+
+      <button
         class="sigeduca-term-settings"
       >
         <svg viewBox="0 0 20 20" aria-hidden="true">
@@ -3224,6 +3231,77 @@
     return html;
   }
 
+  function buildCienciaMilitarTerm(
+    data,
+    responsibleRG
+  ) {
+    let html =
+      TEMPLATES.cienciaMilitar;
+
+    html =
+      replaceAllSafe(
+        html,
+        '<<NOME_RESPONSAVEL>>',
+        data.responsavel
+      );
+
+    html =
+      replaceAllSafe(
+        html,
+        '<<RG_RESPONSAVEL>>',
+        responsibleRG ||
+        '[RG DO RESPONSÁVEL]'
+      );
+
+    html =
+      replaceAllSafe(
+        html,
+        '<<CPF_RESPONSAVEL>>',
+        data.cpfResponsavel ||
+        '[CPF DO RESPONSÁVEL]'
+      );
+
+    const enderecoCompleto =
+      [
+        data.endereco,
+        data.municipio &&
+        data.uf ?
+          `${data.municipio} - ${data.uf}` :
+          '',
+        data.cep ?
+          `CEP ${data.cep}` :
+          ''
+      ]
+        .filter(Boolean)
+        .join(', ');
+
+    html =
+      replaceAllSafe(
+        html,
+        '<<ENDERECO_ALUNO>>',
+        enderecoCompleto
+      );
+
+    html =
+      replaceAllSafe(
+        html,
+        '<<NOME_ALUNO>>',
+        data.aluno
+      );
+
+    const todayText =
+      currentDateWritten();
+
+    html =
+      replaceAllSafe(
+        html,
+        '<<LOCAL_E_DATA>>',
+        `${data.municipioCabecalho || data.municipio}, ${todayText}.`
+      );
+
+    return html;
+  }
+
   function openPrintDocument(
     html,
     title
@@ -3490,6 +3568,29 @@
         break;
       }
 
+      case 'cienciaMilitar': {
+
+        if (!data.responsavel) {
+          throw new Error(
+            'O nome do Responsável 1 não está preenchido no cadastro.'
+          );
+        }
+
+        const rgMilitar =
+          await showResponsibleRGModal(
+            hostDoc,
+            data.responsavel
+          );
+
+        html =
+          buildCienciaMilitarTerm(
+            data,
+            rgMilitar
+          );
+
+        break;
+      }
+
       default:
 
         throw new Error(
@@ -3511,7 +3612,10 @@
         'Termo de Compromisso Familiar — Menor',
 
       authMatricula:
-        'Autorização para Matrícula e Retirada de Transferência/Histórico Escolar'
+        'Autorização para Matrícula e Retirada de Transferência/Histórico Escolar',
+
+      cienciaMilitar:
+        'Termo de Ciência e Concordância — Escola Cívico-Militar'
     };
 
     openPrintDocument(
@@ -5540,6 +5644,312 @@ Eu, <strong><<NOME_RESPONSAVEL>></strong>, de nacionalidade brasileira, portador
 <span class="signature-caption">
 Assinatura conforme RG
 </span>
+
+</div>
+
+</section>
+
+</main>
+
+</body>
+
+</html>`,
+
+    cienciaMilitar: `<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0"
+>
+
+<title>
+Termo de Ciência e Concordância — Escola Cívico-Militar
+</title>
+
+<style>
+
+@page{
+  size:A4 portrait;
+  margin:0;
+}
+
+*{
+  box-sizing:border-box;
+}
+
+html,
+body{
+  margin:0;
+  padding:0;
+
+  background:#e9e9e9;
+
+  color:#000;
+
+  font-family:
+    "Times New Roman",
+    Times,
+    serif;
+}
+
+.document{
+  width:210mm;
+  margin:12mm auto;
+}
+
+.page{
+  position:relative;
+
+  width:210mm;
+  height:297mm;
+
+  padding:
+    14mm
+    17mm
+    15mm
+    17mm;
+
+  background:#fff;
+
+  overflow:hidden;
+}
+
+.header-military{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:6mm;
+
+  padding-bottom:5mm;
+
+  border-bottom:.3mm solid #000;
+
+  margin-bottom:9mm;
+}
+
+.header-spacer{
+  width:20mm;
+  flex:0 0 auto;
+}
+
+.header-text{
+  flex:1;
+
+  text-align:center;
+}
+
+.header-anexo{
+  font-size:10pt;
+  font-weight:700;
+
+  margin-bottom:4mm;
+}
+
+.header-institution{
+  font-size:11pt;
+  font-weight:700;
+  line-height:1.35;
+
+  text-transform:uppercase;
+}
+
+.header-brasao{
+  display:block;
+
+  width:20mm;
+  height:auto;
+
+  flex:0 0 auto;
+}
+
+.body{
+  font-size:11pt;
+
+  line-height:1.3;
+
+  text-align:justify;
+}
+
+.doc-title{
+  margin-bottom:9mm;
+
+  font-size:12pt;
+  font-weight:700;
+
+  text-align:center;
+}
+
+.legal-paragraph{
+  margin:
+    0
+    0
+    5.6mm;
+
+  text-indent:8mm;
+
+  text-align:justify;
+}
+
+.blank-inline{
+  display:inline-block;
+
+  border-bottom:.25mm solid #000;
+  vertical-align:baseline;
+
+  margin:0 1mm;
+
+  width:30mm;
+}
+
+.date-line{
+  margin-top:14mm;
+
+  text-align:left;
+}
+
+.final-signature{
+  margin-top:16mm;
+
+  text-align:center;
+}
+
+.final-signature-line{
+  width:85mm;
+
+  height:7mm;
+
+  margin:
+    0
+    auto;
+
+  border-bottom:
+    .25mm solid #000;
+}
+
+.final-signature-label{
+  margin-top:2mm;
+
+  font-size:10.8pt;
+}
+
+@media print{
+
+  html,
+  body{
+    background:#fff;
+  }
+
+  .document{
+    width:auto;
+    margin:0;
+  }
+
+  .page{
+    width:210mm;
+    height:297mm;
+
+    margin:0;
+
+    padding:
+      14mm
+      17mm
+      15mm
+      17mm;
+
+    box-shadow:none;
+  }
+
+}
+
+@media screen{
+
+  .page{
+    box-shadow:
+      0 1px 8px rgba(0,0,0,.14);
+  }
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<main class="document">
+
+<section class="page">
+
+<header class="header-military">
+
+<div class="header-spacer"></div>
+
+<div class="header-text">
+
+<div class="header-anexo">
+Anexo I
+</div>
+
+<div class="header-institution">
+Estado de Mato Grosso<br>
+Secretaria de Estado de Educação<br>
+Superintendência de Escolas Militares e Cívico-Militares<br>
+Escola Estadual Cívico-Militar
+</div>
+
+</div>
+
+<img
+  class="header-brasao"
+  src="https://drive.google.com/thumbnail?id=1ooGkSLedmC2m64g4OmfJnv8wvzIaDWBV&sz=w1000"
+  alt="Escola Estadual Cívico-Militar"
+>
+
+</header>
+
+<div class="body">
+
+<div class="doc-title">
+TERMO DE CIÊNCIA E CONCORDÂNCIA
+</div>
+
+<p class="legal-paragraph">
+
+Eu, <strong><<NOME_RESPONSAVEL>></strong> (nome completo), portador do documento de identidade nº <strong><<RG_RESPONSAVEL>></strong>, CPF nº <strong><<CPF_RESPONSAVEL>></strong>, residente e domiciliado em <strong><<ENDERECO_ALUNO>></strong> (endereço completo), responsável legal pelo aluno(a) <strong><<NOME_ALUNO>></strong> (nome completo), matriculado na turma <span class="blank-inline"></span>, Declaro, para todos os fins úteis, que:
+
+</p>
+
+<p class="legal-paragraph">
+
+Estou familiarizado com as disposições contidas no Manual das Escolas Cívicas e Militares do Estado, incluindo, mas não se limitando a, normas disciplinares, regulamentos internos, diretrizes educacionais, procedimentos de segurança e protocolos administrativos.
+
+</p>
+
+<p class="legal-paragraph">
+
+Aceito o conteúdo dos documentos de orientação, sejam eles o Regulamento Disciplinar Escolar, o Projeto de Política Pedagógica, as Normas e Orientações a que se referem, nomeadamente a apresentação pessoal e o sistema de créditos e reduções, bem como, afirmo que tenho conhecimento dos documentos aqui citados.
+
+</p>
+
+<p class="date-line">
+<<LOCAL_E_DATA>>
+</p>
+
+<div class="final-signature">
+
+<div class="final-signature-line">
+</div>
+
+<div class="final-signature-label">
+Nome e assinatura do responsável
+</div>
+
+</div>
 
 </div>
 
