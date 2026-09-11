@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SIGEDUCA - Emissão de Termos
 // @namespace    http://tampermonkey.net/
-// @version      1.8.1
+// @version      1.8.2
 // @description  Emissão de termos escolares em HTML/A4 a partir dos dados do cadastro do aluno.
 // @match        http://sigeduca.seduc.mt.gov.br/ged/*
 // @match        https://sigeduca.seduc.mt.gov.br/ged/*
@@ -16,7 +16,7 @@
   'use strict';
 
   const CONFIG = {
-    scriptVersion: '1.8.1',
+    scriptVersion: '1.8.2',
     versionSeenStorageKey: 'sigeduca_termos_versao_vista',
 
     cookieName: 'sigeduca_termos_config_v1',
@@ -5922,7 +5922,7 @@ TERMO DE CIÊNCIA E CONCORDÂNCIA
 
 <p class="legal-paragraph">
 
-Eu, <strong><<NOME_RESPONSAVEL>></strong> (nome completo), portador do documento de identidade nº <strong><<RG_RESPONSAVEL>></strong>, CPF nº <strong><<CPF_RESPONSAVEL>></strong>, residente e domiciliado em <strong><<ENDERECO_ALUNO>></strong> (endereço completo), responsável legal pelo aluno(a) <strong><<NOME_ALUNO>></strong> (nome completo), matriculado na turma <span class="blank-inline"></span>, Declaro, para todos os fins úteis, que:
+Eu, <strong><<NOME_RESPONSAVEL>></strong>, portador do documento de identidade nº <strong><<RG_RESPONSAVEL>></strong>, CPF nº <strong><<CPF_RESPONSAVEL>></strong>, residente e domiciliado em <strong><<ENDERECO_ALUNO>></strong>, responsável legal pelo aluno(a) <strong><<NOME_ALUNO>></strong>, matriculado na turma <span class="blank-inline"></span>, Declaro, para todos os fins úteis, que:
 
 </p>
 
